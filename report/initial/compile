@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+pandoc Initial\ Plan\ --\ Architectural\ Limits\ of\ Interpreter\ Design.md --bibliography Initial\ Plan\ --\ Architectural\ Limits\ of\ Interpreter\ Design.bib --citeproc -o Initial\ Plan\ --\ Architectural\ Limits\ of\ Interpreter\ Design.pdf
