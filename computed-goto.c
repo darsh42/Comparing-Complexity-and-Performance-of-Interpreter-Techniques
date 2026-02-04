@@ -6,44 +6,6 @@
 
 #include "interpreter_templates.h"
 
-#define PRIMARY_OPCODE_LABEL_ARRAY                              \
-    void *primary_opcode_labels[] = {                           \
-        [J_OP]     = &&do_j,    [JAL_OP]    = &&do_jal,         \
-        [BEQ_OP]   = &&do_beq,  [BNE_OP]    = &&do_bne,         \
-        [BLEZ_OP]  = &&do_blez, [BGTZ_OP]   = &&do_bgtz,        \
-        [ADDI_OP]  = &&do_addi, [ADDIU_OP]  = &&do_addiu,       \
-        [SLTI_OP]  = &&do_slti, [SLTIU_OP]  = &&do_sltiu,       \
-        [ANDI_OP]  = &&do_andi, [ORI_OP]    = &&do_ori,         \
-        [XORI_OP]  = &&do_xori, [LUI_OP]    = &&do_lui,         \
-        [LB_OP]    = &&do_lb,   [LH_OP]     = &&do_lh,          \
-        [LWL_OP]   = &&do_lwl,  [LW_OP]     = &&do_lw,          \
-        [LBU_OP]   = &&do_lbu,  [LHU_OP]    = &&do_lhu,         \
-        [LWR_OP]   = &&do_lwr,  [SB_OP]     = &&do_sb,          \
-        [SH_OP]    = &&do_sh,   [SWL_OP]    = &&do_swl,         \
-        [SW_OP]    = &&do_sw,   [SWR_OP]    = &&do_swr,         \
-    }
-#define SECONDARY_OPCODE_LABEL_ARRAY                            \
-    void *secondary_opcode_labels[] = {                         \
-        [SLL_FN]     = &&do_sll,     [SRL_FN]   = &&do_srl,     \
-        [SRA_FN]     = &&do_sra,     [SLLV_FN]  = &&do_sllv,    \
-        [SRLV_FN]    = &&do_srlv,    [SRAV_FN]  = &&do_srav,    \
-        [JR_FN]      = &&do_jr,      [JALR_FN]  = &&do_jalr,    \
-        [SYSCALL_FN] = &&do_syscall, [BRK_FN]   = &&do_brk,     \
-        [MFHI_FN]    = &&do_mfhi,    [MTHI_FN]  = &&do_mthi,    \
-        [MFLO_FN]    = &&do_mflo,    [MTLO_FN]  = &&do_mtlo,    \
-        [MULT_FN]    = &&do_mult,    [MULTU_FN] = &&do_multu,   \
-        [DIV_FN]     = &&do_div,     [DIVU_FN]  = &&do_divu,    \
-        [ADD_FN]     = &&do_add,     [ADDU_FN]  = &&do_addu,    \
-        [SUB_FN]     = &&do_sub,     [SUBU_FN]  = &&do_subu,    \
-        [AND_FN]     = &&do_and,     [OR_FN]    = &&do_or,      \
-        [XOR_FN]     = &&do_xor,     [NOR_FN]   = &&do_nor,     \
-        [SLT_FN]     = &&do_slt,     [SLTU_FN]  = &&do_sltu,    \
-    } 
-#define BRANCH_OPCODE_LABEL_ARRAY                               \
-    void *branch_opcode_labels[] = {                            \
-        [BLTZ_RT]    = &&do_bltz,   [BGEZ_RT]    = &&do_bgez,   \
-        [BLTZAL_RT]  = &&do_bltzal, [BGEZAL_RT]  = &&do_bgezal, \
-    }
 #define LABEL(type, formatter, impl, name)                      \
     do_ ## name:                                                \
     {                                                           \
@@ -82,26 +44,59 @@
     mips->r[MIPS_R_PC] += 4;                                    \
                                                                 \
     /* goto the next label */                                   \
-    switch ((mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK) {      \
-    default:                                                    \
-        goto *primary_opcode_labels[                            \
-            (mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK];       \
-    case 1:                                                     \
-        goto *secondary_opcode_labels[                          \
-            (mips->r[MIPS_R_CIR] >> FN_SHIFT) & FN_MASK];       \
-    case 2:                                                     \
-        goto *branch_opcode_labels[                             \
-            (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];       \
-    }                                                                
+    goto *primary_opcode_labels[                                \
+        (mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK]
                                                                  
 void interpreter_computed_goto(struct mips *mips, struct memory *memory) {     
     /* define each label array */                                
-      PRIMARY_OPCODE_LABEL_ARRAY;
-    SECONDARY_OPCODE_LABEL_ARRAY;
-       BRANCH_OPCODE_LABEL_ARRAY;
+    void *primary_opcode_labels[] = {
+        [0] = &&do_secondary,
+        [1] = &&do_branch,
 
-    /* do first dispatch manually */
-    DISPATCH
+        [J_OP]       = &&do_j,       [JAL_OP]    = &&do_jal,
+        [BEQ_OP]     = &&do_beq,     [BNE_OP]    = &&do_bne,
+        [BLEZ_OP]    = &&do_blez,    [BGTZ_OP]   = &&do_bgtz,
+        [ADDI_OP]    = &&do_addi,    [ADDIU_OP]  = &&do_addiu,
+        [SLTI_OP]    = &&do_slti,    [SLTIU_OP]  = &&do_sltiu,
+        [ANDI_OP]    = &&do_andi,    [ORI_OP]    = &&do_ori,
+        [XORI_OP]    = &&do_xori,    [LUI_OP]    = &&do_lui,
+        [LB_OP]      = &&do_lb,      [LH_OP]     = &&do_lh,
+        [LWL_OP]     = &&do_lwl,     [LW_OP]     = &&do_lw,
+        [LBU_OP]     = &&do_lbu,     [LHU_OP]    = &&do_lhu,
+        [LWR_OP]     = &&do_lwr,     [SB_OP]     = &&do_sb,
+        [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
+        [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
+    };
+    void *secondary_opcode_labels[] = {
+        [SLL_FN]     = &&do_sll,     [SRL_FN]    = &&do_srl,
+        [SRA_FN]     = &&do_sra,     [SLLV_FN]   = &&do_sllv,
+        [SRLV_FN]    = &&do_srlv,    [SRAV_FN]   = &&do_srav,
+        [JR_FN]      = &&do_jr,      [JALR_FN]   = &&do_jalr,
+        [SYSCALL_FN] = &&do_syscall, [BRK_FN]    = &&do_brk,
+        [MFHI_FN]    = &&do_mfhi,    [MTHI_FN]   = &&do_mthi,
+        [MFLO_FN]    = &&do_mflo,    [MTLO_FN]   = &&do_mtlo,
+        [MULT_FN]    = &&do_mult,    [MULTU_FN]  = &&do_multu,
+        [DIV_FN]     = &&do_div,     [DIVU_FN]   = &&do_divu,
+        [ADD_FN]     = &&do_add,     [ADDU_FN]   = &&do_addu,
+        [SUB_FN]     = &&do_sub,     [SUBU_FN]   = &&do_subu,
+        [AND_FN]     = &&do_and,     [OR_FN]     = &&do_or,
+        [XOR_FN]     = &&do_xor,     [NOR_FN]    = &&do_nor,
+        [SLT_FN]     = &&do_slt,     [SLTU_FN]   = &&do_sltu,
+    };
+    void *branch_opcode_labels[] = {
+        [BLTZ_RT]    = &&do_bltz,    [BGEZ_RT]   = &&do_bgez,
+        [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
+    };
+
+    /* start dispatch chain */
+    DISPATCH;
+    
+do_secondary:
+    goto *secondary_opcode_labels[
+        (mips->r[MIPS_R_CIR] >> FN_SHIFT) & FN_MASK];
+do_branch:
+    goto *branch_opcode_labels[
+        (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];
 
     LABEL_HALT(ITP_TYPE_SYSCALL, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
 
