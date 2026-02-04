@@ -369,7 +369,7 @@ void *decode(void *args) {
     decode_result_t result;
     do {
         // ensure the decode queue is empty
-        idecode_wait_taken(id, 0);
+        idecode_wait_space(id, CACHELINE_SIZE*8);
             
         /* retrive pc */
         pc = mips->r[MIPS_R_PC];
@@ -379,8 +379,8 @@ void *decode(void *args) {
             u32 filled = 0;
 
             // read instructions 
-            memory_read(memory, pc, 
-                prefetch, PREFETCH_SIZE);
+            memory_read_chunk(memory,
+                pc, prefetch, PREFETCH_SIZE);
 
             // decode instructions
             result = decode_block(
@@ -428,6 +428,8 @@ void *execute(void *args) {
         items[EXECUTER_SIZE];
 
     while (!mips->halted) {
+        idecode_wait_not_empty(id);
+
         u32 filled_slots = 
             idecode_batch_dequeue(
                 id, items, EXECUTER_SIZE);
@@ -446,7 +448,13 @@ void *execute(void *args) {
 }
 
 void interpreter_decoupled(struct mips *mips, struct memory *memory) {
-    idecode_queue_t idecode = {};
+    /* define instruction decode queue parameters  */
+    idecode_queue_t 
+        idecode = {};
+    idecode_item_t  
+        idecode_items[CACHELINE_SIZE*8];
+    idecode_queue_init(&idecode, 
+        idecode_items, CACHELINE_SIZE*8);
 
     /* create thread arguments */
     execute_args_t execute_args = {

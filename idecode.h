@@ -200,13 +200,12 @@ idecode_wait_space(const idecode_queue_t *q, u32 n)
 }
 
 static inline void
-idecode_wait_taken(const idecode_queue_t *q, u32 n)
-{
+idecode_wait_not_empty(const idecode_queue_t *q) {
     for (;;) {
         u32 head = atomic_load_explicit(&q->head, memory_order_acquire);
         u32 tail = atomic_load_explicit(&q->tail, memory_order_relaxed);
 
-        if (head - tail >= n)
+        if (head - tail > 0)
             return;
 
         cpu_relax();
