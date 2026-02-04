@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <elf.h>
-
+#include "common.h"
 #include "mips.h"
 #include "memory.h"
 

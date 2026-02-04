@@ -1,11 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-
-#include <elf.h>
-#include <assert.h>
-
+#include "common.h"
 #include "log.h"
 #include "memory.h"
 

@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <assert.h>
-#include <pthread.h>
-
+#include "common.h"
 #include "log.h"
 
 #include "mips.h"
@@ -481,6 +477,7 @@ void interpreter_decoupled(struct mips *mips, struct memory *memory) {
     pthread_join(thread_execute, NULL);
 }
 
+#ifdef __DECOUPLED_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "usage: %s mips.elf\n", *argv);
@@ -505,3 +502,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif // __DECOUPLED_MAIN__

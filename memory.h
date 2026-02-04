@@ -1,13 +1,6 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdint.h>
-#include <stddef.h>
-
 typedef  int64_t s64;
 typedef  int32_t s32;
 typedef  int16_t s16;
@@ -57,9 +50,5 @@ void memory_write(struct memory *memory, u32 address, u32 data, u32 size);
 
 void create_memory(struct memory *memory);
 void delete_memory(struct memory *memory);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // __MEMORY_H__

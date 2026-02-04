@@ -35,19 +35,8 @@
  *  wait_taken        -> u32 (Q, u32)
  * */
 
-#ifdef __cplusplus
-  #include <atomic>
-  using std::atomic_int;
-  using std::memory_order;
-  using std::memory_order_relaxed;
-  using std::memory_order_acquire;
-  using std::memory_order_release;
-#else // __cplusplus
-  #include <stdatomic.h>
-#endif // __cplusplus
-
+#include "common.h"
 #include "mips.h"
-#include <string.h>
 
 #ifndef likely
 # define likely(x)   __builtin_expect(!!(x), 1)

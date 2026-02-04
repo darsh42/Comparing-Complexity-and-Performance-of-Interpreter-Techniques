@@ -4,10 +4,7 @@
  * One of the emulation techniques tested in this i- *
  * nvestigation                                      *
  *****************************************************/
-#include <stdio.h>
-#include <stdint.h>
-#include <assert.h>
-
+#include "common.h"
 #include "log.h"
 #include "mips.h"
 #include "memory.h"
@@ -195,6 +192,7 @@ branch_op:
     }
 }
 
+#ifdef __SWITCH_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "usage: %s mips.elf\n", *argv);
@@ -220,3 +218,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif // __SWITCH_MAIN__

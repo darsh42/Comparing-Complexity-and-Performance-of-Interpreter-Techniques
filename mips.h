@@ -1,17 +1,6 @@
 #ifndef __MIPS_H__
 #define __MIPS_H__
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#define CACHELINE_SIZE 64
-
-#define U32MAX  0xffffffff
-#define S32MIN ((s64)-2147483648LL)
-
 #define FN_SHIFT 0
 #define FN_MASK  0x3f
 #define SH_SHIFT 6
@@ -154,16 +143,6 @@
     X(MIPS_SYSCALL_CLOSE,  3, "syscall_close") \
     X(MIPS_SYSCALL_LSEEK,  4, "syscall_lseek") \
     X(MIPS_SYSCALL_MAX,    5, "syscall_max")
-
-typedef  int64_t s64;
-typedef  int32_t s32;
-typedef  int16_t s16;
-typedef   int8_t  s8;
-
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef  uint8_t  u8;
 
 enum MIPS_SECTION {
     OLD_BLOCK = 0,

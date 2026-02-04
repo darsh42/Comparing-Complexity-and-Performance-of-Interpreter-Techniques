@@ -71,6 +71,19 @@ add_executable(testsuite
     ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c
     ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c)
 
+target_compile_definitions(switch
+    PRIVATE
+    __SWITCH_MAIN__)
+target_compile_definitions(computed-goto
+    PRIVATE
+    __COMPUTED_GOTO_MAIN__)
+target_compile_definitions(decoupled
+    PRIVATE
+    __DECOUPLED_MAIN__)
+target_compile_definitions(testsuite
+    PRIVATE
+    __TESTSUITE_MAIN__)
+
 target_include_directories(switch
     PRIVATE
     .

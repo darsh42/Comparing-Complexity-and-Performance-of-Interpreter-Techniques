@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <assert.h>
-
+#include "common.h"
 #include "log.h"
 #include "mips.h"
 #include "memory.h"
@@ -183,6 +180,7 @@ void interpreter_computed_goto(struct mips *mips, struct memory *memory) {
     LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 }
 
+#ifdef __COMPUTED_GOTO_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "usage: %s mips.elf\n", *argv);
@@ -206,3 +204,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif // __COMPUTED_GOTO_MAIN__

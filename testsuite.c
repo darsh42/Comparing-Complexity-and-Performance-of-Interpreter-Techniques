@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <assert.h>
-
+#include "common.h"
 #include "log.h"
 #include "test.h"
 #include "mips.h"
@@ -64,6 +60,7 @@ void tassert(bool condition, const char *name, const char *diag, ...) {
     va_end(args);
 }
 
+#ifdef __TESTSUITE_MAIN__
 /* interpreter routines */
 extern void interpreter_switch(
         struct mips *mips, struct memory *memory);
@@ -91,3 +88,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif // __TESTSUITE_MAIN__

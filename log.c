@@ -1,7 +1,5 @@
+#include "common.h"
 #include "log.h"
-
-#include <stdio.h>
-#include <stdarg.h>
 
 char * type[LOG_LEVEL_LEN] = {
     "DEBUG",
