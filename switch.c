@@ -89,106 +89,110 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  sw)
 ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 
 void interpreter_switch(struct mips *mips, struct memory *memory) {
-    /* handle branch delays */
-    switch (mips->branch_s) {
-    case DELAY:     
-        mips->branch_s = TRANSFER; 
-        break;
-    case TRANSFER:  
-        mips->branch_s = UNUSED;
-        mips->r[MIPS_R_PC] = mips->branch_v;
-        break;
-    default:
-        break;
-    }
+    for (;;) {
+        /* handle branch delays */
+        switch (mips->branch_s) {
+        case DELAY:     
+            mips->branch_s = TRANSFER; 
+            break;
+        case TRANSFER:  
+            mips->branch_s = UNUSED;
+            mips->r[MIPS_R_PC] = mips->branch_v;
+            break;
+        default:
+            break;
+        }
 
-    /* read the next opcode */
-    memory_read(memory, mips->r[MIPS_R_PC], 
-                &mips->r[MIPS_R_CIR], 4);
+        /* read the next opcode */
+        memory_read(memory, mips->r[MIPS_R_PC], 
+                    &mips->r[MIPS_R_CIR], 4);
 
-    /* increment program counter */
-    mips->r[MIPS_R_PC] += 4;
+        /* increment program counter */
+        mips->r[MIPS_R_PC] += 4;
 
-    /* process opcode */
-    switch((mips->r[MIPS_R_CIR] >> OP_SHIFT) & 
-                                    OP_MASK) {
-    case 0x0: 
-        goto secondary_op;
-    case 0x1:    
-        goto    branch_op;
+        /* process opcode */
+        switch((mips->r[MIPS_R_CIR] >> OP_SHIFT) & 
+                                        OP_MASK) {
+        case OP_MASK: return;
 
-    case 0x02:  interpret_j(mips, memory);       return;
-    case 0x03:  interpret_jal(mips, memory);     return;
-    case 0x04:  interpret_beq(mips, memory);     return;
-    case 0x05:  interpret_bne(mips, memory);     return;
-    case 0x06:  interpret_blez(mips, memory);    return;
-    case 0x07:  interpret_bgtz(mips, memory);    return;
-    case 0x08:  interpret_addi(mips, memory);    return;
-    case 0x09:  interpret_addiu(mips, memory);   return;
-    case 0x0a:  interpret_slti(mips, memory);    return;
-    case 0x0b:  interpret_sltiu(mips, memory);   return;
-    case 0x0c:  interpret_andi(mips, memory);    return;
-    case 0x0d:  interpret_ori(mips, memory);     return;
-    case 0x0e:  interpret_xori(mips, memory);    return;
-    case 0x0f:  interpret_lui(mips, memory);     return;
-    case 0x20:  interpret_lb(mips, memory);      return;
-    case 0x21:  interpret_lh(mips, memory);      return;
-    case 0x22:  interpret_lwl(mips, memory);     return;
-    case 0x23:  interpret_lw(mips, memory);      return;
-    case 0x24:  interpret_lbu(mips, memory);     return;
-    case 0x25:  interpret_lhu(mips, memory);     return;
-    case 0x26:  interpret_lwr(mips, memory);     return;
-    case 0x28:  interpret_sb(mips, memory);      return;
-    case 0x29:  interpret_sh(mips, memory);      return;
-    case 0x2a:  interpret_swl(mips, memory);     return;
-    case 0x2b:  interpret_sw(mips, memory);      return;
-    case 0x2e:  interpret_swr(mips, memory);     return;
-    default:
-        assert(0 && "Unknown primary instruction");
-    }
-secondary_op:
-    switch((mips->r[MIPS_R_CIR] >> FN_SHIFT) & 
-                                   FN_MASK) {
-    case 0x00: interpret_sll(mips, memory);      return;
-    case 0x02: interpret_srl(mips, memory);      return;
-    case 0x03: interpret_sra(mips, memory);      return;
-    case 0x04: interpret_sllv(mips, memory);     return;
-    case 0x06: interpret_srlv(mips, memory);     return;
-    case 0x07: interpret_srav(mips, memory);     return;
-    case 0x08: interpret_jr(mips, memory);       return;
-    case 0x09: interpret_jalr(mips, memory);     return;
-    case 0x0c: interpret_syscall(mips, memory);  return;
-    case 0x0d: interpret_brk(mips, memory);      return;
-    case 0x10: interpret_mfhi(mips, memory);     return;
-    case 0x11: interpret_mthi(mips, memory);     return;
-    case 0x12: interpret_mflo(mips, memory);     return;
-    case 0x13: interpret_mtlo(mips, memory);     return;
-    case 0x18: interpret_mult(mips, memory);     return;
-    case 0x19: interpret_multu(mips, memory);    return;
-    case 0x1a: interpret_div(mips, memory);      return;
-    case 0x1b: interpret_divu(mips, memory);     return;
-    case 0x20: interpret_add(mips, memory);      return;
-    case 0x21: interpret_addu(mips, memory);     return;
-    case 0x22: interpret_sub(mips, memory);      return;
-    case 0x23: interpret_subu(mips, memory);     return;
-    case 0x24: interpret_and(mips, memory);      return;
-    case 0x25: interpret_or(mips, memory);       return;
-    case 0x26: interpret_xor(mips, memory);      return;
-    case 0x27: interpret_nor(mips, memory);      return;
-    case 0x2a: interpret_slt(mips, memory);      return;
-    case 0x2b: interpret_sltu(mips, memory);     return;
-    default:
-        assert(0 && "Unknown secondary instruction");
-    }
-branch_op:
-    switch((mips->r[MIPS_R_CIR] >> RT_SHIFT) & 
-                                   RT_MASK) {
-    case 0x00: interpret_bltz(mips, memory);     return;
-    case 0x01: interpret_bgez(mips, memory);     return;
-    case 0x10: interpret_bltzal(mips, memory);   return;
-    case 0x11: interpret_bgezal(mips, memory);   return;
-    default:
-        assert(0 && "Unknown branch instruction");
+        case 0x0: 
+            goto secondary_op;
+        case 0x1:    
+            goto    branch_op;
+
+        case 0x02:  interpret_j(mips, memory);       continue;
+        case 0x03:  interpret_jal(mips, memory);     continue;
+        case 0x04:  interpret_beq(mips, memory);     continue;
+        case 0x05:  interpret_bne(mips, memory);     continue;
+        case 0x06:  interpret_blez(mips, memory);    continue;
+        case 0x07:  interpret_bgtz(mips, memory);    continue;
+        case 0x08:  interpret_addi(mips, memory);    continue;
+        case 0x09:  interpret_addiu(mips, memory);   continue;
+        case 0x0a:  interpret_slti(mips, memory);    continue;
+        case 0x0b:  interpret_sltiu(mips, memory);   continue;
+        case 0x0c:  interpret_andi(mips, memory);    continue;
+        case 0x0d:  interpret_ori(mips, memory);     continue;
+        case 0x0e:  interpret_xori(mips, memory);    continue;
+        case 0x0f:  interpret_lui(mips, memory);     continue;
+        case 0x20:  interpret_lb(mips, memory);      continue;
+        case 0x21:  interpret_lh(mips, memory);      continue;
+        case 0x22:  interpret_lwl(mips, memory);     continue;
+        case 0x23:  interpret_lw(mips, memory);      continue;
+        case 0x24:  interpret_lbu(mips, memory);     continue;
+        case 0x25:  interpret_lhu(mips, memory);     continue;
+        case 0x26:  interpret_lwr(mips, memory);     continue;
+        case 0x28:  interpret_sb(mips, memory);      continue;
+        case 0x29:  interpret_sh(mips, memory);      continue;
+        case 0x2a:  interpret_swl(mips, memory);     continue;
+        case 0x2b:  interpret_sw(mips, memory);      continue;
+        case 0x2e:  interpret_swr(mips, memory);     continue;
+        default:
+            assert(0 && "Unknown primary instruction");
+        }
+    secondary_op:
+        switch((mips->r[MIPS_R_CIR] >> FN_SHIFT) & 
+                                       FN_MASK) {
+        case 0x00: interpret_sll(mips, memory);      continue;
+        case 0x02: interpret_srl(mips, memory);      continue;
+        case 0x03: interpret_sra(mips, memory);      continue;
+        case 0x04: interpret_sllv(mips, memory);     continue;
+        case 0x06: interpret_srlv(mips, memory);     continue;
+        case 0x07: interpret_srav(mips, memory);     continue;
+        case 0x08: interpret_jr(mips, memory);       continue;
+        case 0x09: interpret_jalr(mips, memory);     continue;
+        case 0x0c: interpret_syscall(mips, memory);  continue;
+        case 0x0d: interpret_brk(mips, memory);      return;
+        case 0x10: interpret_mfhi(mips, memory);     continue;
+        case 0x11: interpret_mthi(mips, memory);     continue;
+        case 0x12: interpret_mflo(mips, memory);     continue;
+        case 0x13: interpret_mtlo(mips, memory);     continue;
+        case 0x18: interpret_mult(mips, memory);     continue;
+        case 0x19: interpret_multu(mips, memory);    continue;
+        case 0x1a: interpret_div(mips, memory);      continue;
+        case 0x1b: interpret_divu(mips, memory);     continue;
+        case 0x20: interpret_add(mips, memory);      continue;
+        case 0x21: interpret_addu(mips, memory);     continue;
+        case 0x22: interpret_sub(mips, memory);      continue;
+        case 0x23: interpret_subu(mips, memory);     continue;
+        case 0x24: interpret_and(mips, memory);      continue;
+        case 0x25: interpret_or(mips, memory);       continue;
+        case 0x26: interpret_xor(mips, memory);      continue;
+        case 0x27: interpret_nor(mips, memory);      continue;
+        case 0x2a: interpret_slt(mips, memory);      continue;
+        case 0x2b: interpret_sltu(mips, memory);     continue;
+        default:
+            assert(0 && "Unknown secondary instruction");
+        }
+    branch_op:
+        switch((mips->r[MIPS_R_CIR] >> RT_SHIFT) & 
+                                       RT_MASK) {
+        case 0x00: interpret_bltz(mips, memory);     continue;
+        case 0x01: interpret_bgez(mips, memory);     continue;
+        case 0x10: interpret_bltzal(mips, memory);   continue;
+        case 0x11: interpret_bgezal(mips, memory);   continue;
+        default:
+            assert(0 && "Unknown branch instruction");
+        }
     }
 }
 
