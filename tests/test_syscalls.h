@@ -30,10 +30,6 @@ static TEST_FUNC(test_syscalls_filehandling) {
     const char *message     = MESSAGE;
     const u32   message_len = strlen(message);
 
-    /* load the read and write functions */
-    memory.read  = memory_le_read;
-    memory.write = memory_le_write;
-
     /* create program segment */
     struct segment *program =
         create_segment(&memory, PROGRAM_START,

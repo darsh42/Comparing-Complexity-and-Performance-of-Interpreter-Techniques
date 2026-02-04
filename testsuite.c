@@ -14,10 +14,6 @@ void tload(struct memory *memory, u32 address, size_t count, const u32 *instruct
         memory_map_address(memory, address);
 
     if (segment == NULL) {
-        /* load the read and write functions */
-        memory->read  = memory_le_read;
-        memory->write = memory_le_write;
-
         /* create a new segment */
         segment = create_segment(memory,
                                  address, 

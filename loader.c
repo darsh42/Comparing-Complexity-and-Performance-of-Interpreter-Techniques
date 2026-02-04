@@ -30,20 +30,6 @@ void loader_elf(struct mips   *mips,
     assert(ehdr.e_ident[EI_CLASS] == ELFCLASS32 &&
             "only support 32-bit elf");
 
-    /* check byte ordering */
-    switch (ehdr.e_ident[EI_DATA]) {
-    case ELFDATA2LSB:
-        memory->read  = memory_le_read;
-        memory->write = memory_le_write;
-        break;
-    case ELFDATA2MSB:
-        memory->read  = memory_be_read;
-        memory->write = memory_be_write;
-        break;
-    default:
-        assert(0 && "Unknown endianness");
-    }
-
     /* check elf type */
     assert(ehdr.e_type == ET_EXEC &&
             "only support executable elf");

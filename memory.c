@@ -47,57 +47,6 @@ void print_segment(struct memory *memory, size_t index) {
 }
 
 /*******************************************
- * ENDIANNESS - MIPS architecture supports *
- *              big and little endian add- *
- *              ressing schemes.           *
- *                                         *
- *              Therefor reading and writ- *
- *              ing is changed based on    *
- *              the elf that is passed.    *
- *******************************************/
-/* read big endian */
-void memory_be_read(struct segment *segment, u32 address, u32 *data, u32 size) {
-    u32 _data = 0;
-    switch (size) {
-    case 4: _data |= *(segment->segment + address + 0) << 24;
-            _data |= *(segment->segment + address + 1) << 16;
-    case 2: _data |= *(segment->segment + address + 2) <<  8;
-    case 1: _data |= *(segment->segment + address + 3) <<  0;
-    } *data = _data;
-}
-
-/* read little endian */
-void memory_le_read(struct segment *segment, u32 address, u32 *data, u32 size) {
-    u32 _data = 0;
-    switch (size) {
-    case 4: _data |= *(segment->segment + address + 3) << 24;
-            _data |= *(segment->segment + address + 2) << 16;
-    case 2: _data |= *(segment->segment + address + 1) <<  8;
-    case 1: _data |= *(segment->segment + address + 0) <<  0;
-    } *data = _data;
-}
-
-/* write big endian */
-void memory_be_write(struct segment *segment, u32 address, u32 data, u32 size) {
-    switch (size) {
-    case 4: *(segment->segment + address + 0) = (uint8_t) (data >> 24);
-            *(segment->segment + address + 1) = (uint8_t) (data >> 16); 
-    case 2: *(segment->segment + address + 2) = (uint8_t) (data >>  8);
-    case 1: *(segment->segment + address + 3) = (uint8_t) (data >>  0);
-    }
-}
-
-/* write little endian */
-void memory_le_write(struct segment *segment, u32 address, u32 data, u32 size) {
-    switch (size) {
-    case 4: *(segment->segment + address + 3) = (uint8_t) (data >> 24);
-            *(segment->segment + address + 2) = (uint8_t) (data >> 16); 
-    case 2: *(segment->segment + address + 1) = (uint8_t) (data >>  8);
-    case 1: *(segment->segment + address + 0) = (uint8_t) (data >>  0);
-    }
-}
-
-/*******************************************
  * READ/WRITE - Basic methods for reading  *
  *              and writing to the memory  *
  *              of the emulated processor. *
@@ -116,6 +65,27 @@ struct segment *memory_map_address(struct memory *memory, u32 address) {
     }
     return NULL;
 }
+void memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size) {
+    /* define segment holder */
+    struct segment *segment = 
+        memory_map_address(memory, address);
+    assert(segment != NULL);
+
+    /* translate address to segment base */
+    address -= segment->lower;
+
+    /* check memory index validity */
+    assert(address <= segment->upper);
+
+    size = (size < segment->upper - segment->lower) ? 
+        size: segment->upper - segment->lower;
+
+    /* depending on endianness store value - oppertunities to optimise */
+    for (size_t b = 0; b < size; b++) {
+        *(((u8 *)data) + b) = 
+            *(segment->segment + address + b);
+    }
+}
 void memory_read(struct memory *memory, u32 address, u32 *data, u32 size) {
     /* define segment holder */
     struct segment *segment = 
@@ -128,8 +98,14 @@ void memory_read(struct memory *memory, u32 address, u32 *data, u32 size) {
     /* check memory index validity */
     assert(address <= segment->upper);
 
-    /* depending on endianness store value */
-    memory->read(segment, address, data, size); 
+    /* depending on endianness store value - oppertunities to optimise */
+    u32 _data = 0;
+    switch (size) {
+    case 4: _data |= *(segment->segment + address + 3) << 24;
+            _data |= *(segment->segment + address + 2) << 16;
+    case 2: _data |= *(segment->segment + address + 1) <<  8;
+    case 1: _data |= *(segment->segment + address + 0) <<  0;
+    } *data = _data;
 }
 
 void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
@@ -145,7 +121,12 @@ void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
     assert(address <= segment->upper);
 
     /* depending on endianness store value */
-    memory->write(segment, address, data, size);
+    switch (size) {
+    case 4: *(segment->segment + address + 3) = (uint8_t) (data >> 24);
+            *(segment->segment + address + 2) = (uint8_t) (data >> 16); 
+    case 2: *(segment->segment + address + 1) = (uint8_t) (data >>  8);
+    case 1: *(segment->segment + address + 0) = (uint8_t) (data >>  0);
+    }
 }
 
 void create_memory(struct memory *memory) {
