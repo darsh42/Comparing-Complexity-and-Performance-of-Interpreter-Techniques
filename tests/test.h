@@ -103,7 +103,7 @@
     ((u32) (FN & FN_MASK) << FN_SHIFT) |            \
     ((u32) (IMM20 & IMM20_MASK) << IMM20_SHIFT)
 #define ASSEMBLE_NOP  0x00000000
-#define ASSEMBLE_HALT 0xffffffff
+#define ASSEMBLE_HALT 0x0000000D
 
 /* test function delarator */
 #define TEST_FUNC(name) \

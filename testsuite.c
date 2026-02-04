@@ -4,6 +4,8 @@
 #include "mips.h"
 #include "memory.h"
 
+#define SIZEOF_ARRAY(arr) (sizeof((arr))/sizeof(*(arr)))
+
 /*
  * basic loader for assembled mneumonics
  */
@@ -74,17 +76,20 @@ int main(int argc, char **argv) {
     (void) argc;
     (void) argv;
 
-    fprintf(stderr, "SWITCH MODEL TEST SUITE\n");
-    for (auto c : tests)
-        c(&interpreter_switch);
+    fprintf(stderr, "SWITCH MODEL TEST SUITE STARTED\n");
+    for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
+        interpreter_tests[c](&interpreter_switch);
+    fprintf(stderr, "SWITCH MODEL TEST SUITE FINISHED\n");
 
-    fprintf(stderr, "COMPUTED MODEL TEST SUITE\n");
-    for (auto c : tests)
-        c(&interpreter_computed_goto);
+    fprintf(stderr, "COMPUTED GOTO MODEL TEST SUITE STARTED\n");
+    for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
+        interpreter_tests[c](&interpreter_computed_goto);
+    fprintf(stderr, "COMPUTED GOTO MODEL TEST SUITE FINISHED\n");
 
-    fprintf(stderr, "DECOUPLED MODEL TEST SUITE\n");
-    for (auto c : tests)
-        c(&interpreter_decoupled);
+    fprintf(stderr, "DECOUPLED MODEL TEST SUITE STARTED\n");
+    for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
+        interpreter_tests[c](&interpreter_decoupled);
+    fprintf(stderr, "DECOUPLED MODEL TEST SUITE FINISHED\n");
 
     return 0;
 }
