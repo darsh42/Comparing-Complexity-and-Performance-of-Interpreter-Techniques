@@ -1,26 +1,27 @@
 # Complexity
-
-- cyclometric complexity (CC)
-- single lines of code (SLOC)
-- nesting levels
-- fan-in & fan-out
-- halstead complexity measures
-
 ###
 **What is the central question? What do I aim to achieve; aim to analyse?**
 
-The question is: "How complicated is a binary translating interpreter?"
+The question is: "Can an interpreter reach JIT-like performance without
+                  JIT-like complexity?"
+
+The key detail in the question is the comparitive nature of it. It has less 
+hinging on the absolute complexities of Binary Translating Interpreter(BTI)s
+but rather focuses on the relative complexities to other interpreters and JIT
+compilers. This is the key argument for why specific measures were chosen in 
+the following sections.
 
 In the interpreter space there are some established constructs and techniques.
 In traditional software engineering these techniques are seen as esoteric and 
 complex. For the purposed of analysing binary translators these techniques are
-going to be considerd as elementry/simple. These constructs may well reduce the
-complexity due to their decoumented nature and "familiar teritory" nature.
+going to be considerd as elementry. These constructs may well reduce the complexity 
+due to their decoumented nature and familiarity of developers in the problem space.
 
 _List of binary translating interpreter constructs and techniques_
 
-The key factor to the complication in a binary translator will be the composition
-of the established techniques. Really the complication is the "glue".
+The expectation is that the main factor to the complication in a binary 
+translator will be the composition of the established techniques. Really 
+the complication is the amount of "glue" required to use these techniques.
 
 ###
 **What are the available metrics that answer or partially answer the question? 
@@ -42,23 +43,39 @@ highlighting the general complexity statistics allowing for comparison with syst
 that are not binary translators, and the domain specific metrics highlighting statistics
 that allow for indepth comparisons between binary translators.
 
+A crucial factor to consider when designing a domain specific metric is the demographic.
+Using domain specific metrics will limit the accessablity for genenral developers as 
+there will be an expected level of expertise required to understand the complexity
+comparisons. A mitigation of this issue could be the use of both kinds of metrics.
+Using both metrics standard and domain specific, we could equate complexity "ratios"
+in domain specific metrics with standardised ones showing that they both track each other.
+
 To gather the points together and answer the questions in bold for each metric:
 
 **STANDARD**
-**Cyclometric Complexity** | Partial | Gives equal importance to each decision/construct doesn't take into account standard procedures and techniques specific to BTIs
 
-**Fan-In & Fan-Out** | Partial | Expect it too be quite low in general due to the nature of interpreters. E.g in computed-gotos there are not many instructions but the complexity is still fairly high.
+**Cyclometric Complexity** | Partial | Gives equal importance to each decision/construct doesn't take 
+into account standard procedures and techniques specific to BTIs
+
+**Fan-In & Fan-Out** | Partial | Expect it too be quite low in general due to the nature of interpreters. 
+E.g in computed-gotos there are not many instructions but the complexity is still fairly high. Though an
+interesting point is that the amount of "glue" code should be quantifiable using this metric.
 
 **Single Lines of Code** | Partial | Simplistic, doesn't take into account the the content of the lines.
 
-**Algorithmic Complexity** | Complete | Difficult, but allows for a thorough analysis of the components of each interpreter. Standard techniques can be "abstracted" away allowing for a fixed cost to be applied.
+**Algorithmic Complexity** | Complete | Difficult, but allows for a thorough analysis of the components 
+of each interpreter. Standard techniques can be "abstracted" away allowing for a fixed cost to be applied.
 
 **UNIQUE/DOMAIN SPECIFIC**
-**Modules/Components** | Partial | If all components are given the same "value", designs with few but complex components will be less complex. Must be paired with other metrics to design a heuristic that allows for complexity based weighting giving a better overview.
 
-**Binary Translating Interpreter(BTI) standard techniques** | Partial | This is an effective strategy, it makes the complexity specific to the problem domain, whilst taking into account the expected knowledge when developing BTIs. The method would be to create a complexity heuristic for each technique. It is best paired with the algorithmic analysis metric as it will allow for quantification of "glue" code aswell.
+**Modules/Components** | Partial | If all components are given the same "value", designs with few but 
+complex components will be less complex. Must be paired with other metrics to design a heuristic that 
+allows for complexity based weighting giving a better overview.
 
-Edge cases/Mitigations?
+**Binary Translating Interpreter(BTI) standard techniques** | Partial | This is an effective strategy, 
+it makes the complexity specific to the problem domain, whilst taking into account the expected knowledge 
+when developing BTIs. The method would be to create a complexity heuristic for each technique. It is 
+best paired with the algorithmic analysis metric as it will allow for quantification of "glue" code aswell.
 
 ###
 **Which metrics have I decided on picking? What makes thoes metrics suitable for
@@ -67,8 +84,8 @@ Is it based of off convieniance? Maybe other studies have used thoes metrics?
 How does choosing these metrics shape the study?**
 
 ###
-Are there changes/re-interpretations of these metrics that need to be made?
-Will changing them subtly make them more applicable?
+**Are there changes/re-interpretations of these metrics that need to be made?
+Will changing them subtly make them more applicable?**
 
 ###
 How will I measure these metrics? What are the methods, programs, tools and techniques?
