@@ -7,101 +7,6 @@
 #include "idecode.h"
 #include "interpreter_templates.h"
 
-#define PREFETCH_SIZE 16
-#define EXECUTE_BATCH_SIZE 8
-
-#define PRIMARY_OPCODE_LABEL_ARRAY                              \
-    void *primary_opcode_labels[] = {                           \
-        [J_OP]     = &&do_j,    [JAL_OP]    = &&do_jal,         \
-        [BEQ_OP]   = &&do_beq,  [BNE_OP]    = &&do_bne,         \
-        [BLEZ_OP]  = &&do_blez, [BGTZ_OP]   = &&do_bgtz,        \
-        [ADDI_OP]  = &&do_addi, [ADDIU_OP]  = &&do_addiu,       \
-        [SLTI_OP]  = &&do_slti, [SLTIU_OP]  = &&do_sltiu,       \
-        [ANDI_OP]  = &&do_andi, [ORI_OP]    = &&do_ori,         \
-        [XORI_OP]  = &&do_xori, [LUI_OP]    = &&do_lui,         \
-        [LB_OP]    = &&do_lb,   [LH_OP]     = &&do_lh,          \
-        [LWL_OP]   = &&do_lwl,  [LW_OP]     = &&do_lw,          \
-        [LBU_OP]   = &&do_lbu,  [LHU_OP]    = &&do_lhu,         \
-        [LWR_OP]   = &&do_lwr,  [SB_OP]     = &&do_sb,          \
-        [SH_OP]    = &&do_sh,   [SWL_OP]    = &&do_swl,         \
-        [SW_OP]    = &&do_sw,   [SWR_OP]    = &&do_swr,         \
-    }
-#define SECONDARY_OPCODE_LABEL_ARRAY                            \
-    void *secondary_opcode_labels[] = {                         \
-        [SLL_FN]     = &&do_sll,     [SRL_FN]   = &&do_srl,     \
-        [SRA_FN]     = &&do_sra,     [SLLV_FN]  = &&do_sllv,    \
-        [SRLV_FN]    = &&do_srlv,    [SRAV_FN]  = &&do_srav,    \
-        [JR_FN]      = &&do_jr,      [JALR_FN]  = &&do_jalr,    \
-        [SYSCALL_FN] = &&do_syscall, [BRK_FN]   = &&do_brk,     \
-        [MFHI_FN]    = &&do_mfhi,    [MTHI_FN]  = &&do_mthi,    \
-        [MFLO_FN]    = &&do_mflo,    [MTLO_FN]  = &&do_mtlo,    \
-        [MULT_FN]    = &&do_mult,    [MULTU_FN] = &&do_multu,   \
-        [DIV_FN]     = &&do_div,     [DIVU_FN]  = &&do_divu,    \
-        [ADD_FN]     = &&do_add,     [ADDU_FN]  = &&do_addu,    \
-        [SUB_FN]     = &&do_sub,     [SUBU_FN]  = &&do_subu,    \
-        [AND_FN]     = &&do_and,     [OR_FN]    = &&do_or,      \
-        [XOR_FN]     = &&do_xor,     [NOR_FN]   = &&do_nor,     \
-        [SLT_FN]     = &&do_slt,     [SLTU_FN]  = &&do_sltu,    \
-    } 
-#define BRANCH_OPCODE_LABEL_ARRAY                               \
-    void *branch_opcode_labels[] = {                            \
-        [BLTZ_RT]    = &&do_bltz,   [BGEZ_RT]    = &&do_bgez,   \
-        [BLTZAL_RT]  = &&do_bltzal, [BGEZAL_RT]  = &&do_bgezal, \
-    }
-
-#define DISPATCH                                 \
-    switch((*prefetch >> OP_SHIFT) & OP_MASK) {  \
-    default:                                     \
-        goto *primary_opcode_labels[             \
-            (*prefetch >> OP_SHIFT) & OP_MASK];  \
-    case 1:                                      \
-        goto *secondary_opcode_labels[           \
-            (*prefetch >> FN_SHIFT) & FN_MASK];  \
-    case 2:                                      \
-        goto *branch_opcode_labels[              \
-            (*prefetch >> RT_SHIFT) & RT_MASK];  \
-    }                                                                
-
-
-#define LABEL(name, function)                               \
-    do_ ## name:                                            \
-        /* increment the filled count */                    \
-        (*filled)++;                                        \
-        /* push function into cache temporary */            \
-        *decoded++ = (void *) &function;                    \
-        /* check and decrement remaining */                 \
-        if (remaining-- > 0) {                              \
-            /* increment prefetcher */                      \
-            prefetch++;                                     \
-            /* dispatch next label */                       \
-            DISPATCH;                                       \
-        }                                                   \
-        goto complete;
-#define LABEL_BRANCH(name, function)                        \
-    do_ ## name:                                            \
-        /* increment the filled count */                    \
-        (*filled)++;                                        \
-        /* push function into cache temporary */            \
-        *decoded++ = (void *) &function;                    \
-        /* set the block kind */                            \
-        result = DECODE_BRANCH;                             \
-        /* set change remaining to do branch delay */       \
-        remaining = 1;                                      \
-        /* increment prefetcher */                          \
-        prefetch++;                                         \
-        /* dispatch next label */                           \
-        DISPATCH;
-#define LABEL_HALT(name, function)                          \
-    do_ ## name:                                            \
-        /* increment the filled count */                    \
-        (*filled)++;                                        \
-        /* push function into decoded pointer array*/       \
-        *decoded++ = (void *) function;                     \
-        /* set the halted decode result */                  \
-        result = DECODE_HALT;                               \
-        /* goto complete label */                           \
-        goto complete;
-
 /* instruction generation */
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRL_IMPL, srl)
@@ -180,6 +85,52 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
+#define PREFETCH_SIZE ((CACHELINE_SIZE / sizeof(void *))+1)
+#define EXECUTER_SIZE  (CACHELINE_SIZE / sizeof(void *))
+
+#define DISPATCH                                                \
+    goto *primary_opcode_labels[                                \
+        (*prefetch >> OP_SHIFT) & OP_MASK];
+
+#define LABEL(name, function)                                   \
+    do_ ## name:                                                \
+        /* increment the filled count */                        \
+        (*filled)++;                                            \
+        /* push function into cache temporary */                \
+        *decoded++ = (void *) &function;                        \
+        /* check and decrement remaining */                     \
+        if (remaining-- > 0) {                                  \
+            /* increment prefetcher */                          \
+            prefetch++;                                         \
+            /* dispatch next label */                           \
+            DISPATCH;                                           \
+        }                                                       \
+        goto complete;
+#define LABEL_BRANCH(name, function)                            \
+    do_ ## name:                                                \
+        /* increment the filled count */                        \
+        (*filled)++;                                            \
+        /* push function into cache temporary */                \
+        *decoded++ = (void *) &function;                        \
+        /* set the block kind */                                \
+        result = DECODE_BRANCH;                                 \
+        /* set change remaining to do branch delay */           \
+        remaining = 1;                                          \
+        /* increment prefetcher */                              \
+        prefetch++;                                             \
+        /* dispatch next label */                               \
+        DISPATCH;
+#define LABEL_HALT(name, function)                              \
+    do_ ## name:                                                \
+        /* increment the filled count */                        \
+        (*filled)++;                                            \
+        /* push function into decoded pointer array*/           \
+        *decoded++ = (void *) function;                         \
+        /* set the halted decode result */                      \
+        result = DECODE_HALT;                                   \
+        /* goto complete label */                               \
+        goto complete;
+
 typedef struct {
     struct mips   *mips;
     struct memory *memory;
@@ -214,15 +165,57 @@ decode_result_t decode_block(void **decoded, u32 *prefetch, u32 *filled) {
     u32 remaining = PREFETCH_SIZE - 1;
 
     /* define each label array */                                
-      PRIMARY_OPCODE_LABEL_ARRAY;
-    SECONDARY_OPCODE_LABEL_ARRAY;
-       BRANCH_OPCODE_LABEL_ARRAY;
+    void *primary_opcode_labels[] = {
+        [0] = &&do_secondary,
+        [1] = &&do_branch,
+
+        [J_OP]       = &&do_j,       [JAL_OP]    = &&do_jal,
+        [BEQ_OP]     = &&do_beq,     [BNE_OP]    = &&do_bne,
+        [BLEZ_OP]    = &&do_blez,    [BGTZ_OP]   = &&do_bgtz,
+        [ADDI_OP]    = &&do_addi,    [ADDIU_OP]  = &&do_addiu,
+        [SLTI_OP]    = &&do_slti,    [SLTIU_OP]  = &&do_sltiu,
+        [ANDI_OP]    = &&do_andi,    [ORI_OP]    = &&do_ori,
+        [XORI_OP]    = &&do_xori,    [LUI_OP]    = &&do_lui,
+        [LB_OP]      = &&do_lb,      [LH_OP]     = &&do_lh,
+        [LWL_OP]     = &&do_lwl,     [LW_OP]     = &&do_lw,
+        [LBU_OP]     = &&do_lbu,     [LHU_OP]    = &&do_lhu,
+        [LWR_OP]     = &&do_lwr,     [SB_OP]     = &&do_sb,
+        [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
+        [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
+    };
+    void *secondary_opcode_labels[] = {
+        [SLL_FN]     = &&do_sll,     [SRL_FN]    = &&do_srl,
+        [SRA_FN]     = &&do_sra,     [SLLV_FN]   = &&do_sllv,
+        [SRLV_FN]    = &&do_srlv,    [SRAV_FN]   = &&do_srav,
+        [JR_FN]      = &&do_jr,      [JALR_FN]   = &&do_jalr,
+        [SYSCALL_FN] = &&do_syscall, [BRK_FN]    = &&do_brk,
+        [MFHI_FN]    = &&do_mfhi,    [MTHI_FN]   = &&do_mthi,
+        [MFLO_FN]    = &&do_mflo,    [MTLO_FN]   = &&do_mtlo,
+        [MULT_FN]    = &&do_mult,    [MULTU_FN]  = &&do_multu,
+        [DIV_FN]     = &&do_div,     [DIVU_FN]   = &&do_divu,
+        [ADD_FN]     = &&do_add,     [ADDU_FN]   = &&do_addu,
+        [SUB_FN]     = &&do_sub,     [SUBU_FN]   = &&do_subu,
+        [AND_FN]     = &&do_and,     [OR_FN]     = &&do_or,
+        [XOR_FN]     = &&do_xor,     [NOR_FN]    = &&do_nor,
+        [SLT_FN]     = &&do_slt,     [SLTU_FN]   = &&do_sltu,
+    };
+    void *branch_opcode_labels[] = {
+        [BLTZ_RT]    = &&do_bltz,    [BGEZ_RT]   = &&do_bgez,
+        [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
+    };
 
     /* start dispatch chain */
     DISPATCH;
+    
+do_secondary:
+    goto *secondary_opcode_labels[
+        (*prefetch >> FN_SHIFT) & FN_MASK];
+do_branch:
+    goto *branch_opcode_labels[
+        (*prefetch >> RT_SHIFT) & RT_MASK];
 
     /*============= halting instructions ==============*/
-    LABEL_HALT(brk, interpret_brk)
+    LABEL_HALT(brk,      interpret_brk)
 
     /*========== branching instructions ===========*/
     LABEL_BRANCH(jr,     interpret_jr)
@@ -239,51 +232,51 @@ decode_result_t decode_block(void **decoded, u32 *prefetch, u32 *filled) {
     LABEL_BRANCH(bne,    interpret_bne)
 
     /*============ basic instructions =============*/
-    LABEL(syscall, interpret_syscall)
-    LABEL(sll,     interpret_sll)
-    LABEL(srl,     interpret_srl)
-    LABEL(sra,     interpret_sra)
-    LABEL(sllv,    interpret_sllv)
-    LABEL(srlv,    interpret_srlv)
-    LABEL(srav,    interpret_srav)
-    LABEL(mfhi,    interpret_mfhi)
-    LABEL(mflo,    interpret_mflo)
-    LABEL(mthi,    interpret_mthi)
-    LABEL(mtlo,    interpret_mtlo)
-    LABEL(mult,    interpret_mult)
-    LABEL(multu,   interpret_multu)
-    LABEL(div,     interpret_div)
-    LABEL(divu,    interpret_divu)
-    LABEL(add,     interpret_add)
-    LABEL(addu,    interpret_addu)
-    LABEL(sub,     interpret_sub)
-    LABEL(subu,    interpret_subu)
-    LABEL(slt,     interpret_slt)
-    LABEL(sltu,    interpret_sltu)
-    LABEL(and,     interpret_and)
-    LABEL(or,      interpret_or)
-    LABEL(xor,     interpret_xor)
-    LABEL(nor,     interpret_nor)
-    LABEL(addi,    interpret_addi)
-    LABEL(addiu,   interpret_addiu)
-    LABEL(slti,    interpret_slti)
-    LABEL(sltiu,   interpret_sltiu)
-    LABEL(andi,    interpret_andi)
-    LABEL(ori,     interpret_ori)
-    LABEL(xori,    interpret_xori)
-    LABEL(lui,     interpret_lui)
-    LABEL(lb,      interpret_lb)
-    LABEL(lh,      interpret_lh)
-    LABEL(lwl,     interpret_lwl)
-    LABEL(lw,      interpret_lw)
-    LABEL(lbu,     interpret_lbu)
-    LABEL(lhu,     interpret_lhu)
-    LABEL(lwr,     interpret_lwr)
-    LABEL(sb,      interpret_sb)
-    LABEL(sh,      interpret_sh)
-    LABEL(swl,     interpret_swl)
-    LABEL(sw,      interpret_sw)
-    LABEL(swr,     interpret_swr)
+    LABEL(syscall,       interpret_syscall)
+    LABEL(sll,           interpret_sll)
+    LABEL(srl,           interpret_srl)
+    LABEL(sra,           interpret_sra)
+    LABEL(sllv,          interpret_sllv)
+    LABEL(srlv,          interpret_srlv)
+    LABEL(srav,          interpret_srav)
+    LABEL(mfhi,          interpret_mfhi)
+    LABEL(mflo,          interpret_mflo)
+    LABEL(mthi,          interpret_mthi)
+    LABEL(mtlo,          interpret_mtlo)
+    LABEL(mult,          interpret_mult)
+    LABEL(multu,         interpret_multu)
+    LABEL(div,           interpret_div)
+    LABEL(divu,          interpret_divu)
+    LABEL(add,           interpret_add)
+    LABEL(addu,          interpret_addu)
+    LABEL(sub,           interpret_sub)
+    LABEL(subu,          interpret_subu)
+    LABEL(slt,           interpret_slt)
+    LABEL(sltu,          interpret_sltu)
+    LABEL(and,           interpret_and)
+    LABEL(or,            interpret_or)
+    LABEL(xor,           interpret_xor)
+    LABEL(nor,           interpret_nor)
+    LABEL(addi,          interpret_addi)
+    LABEL(addiu,         interpret_addiu)
+    LABEL(slti,          interpret_slti)
+    LABEL(sltiu,         interpret_sltiu)
+    LABEL(andi,          interpret_andi)
+    LABEL(ori,           interpret_ori)
+    LABEL(xori,          interpret_xori)
+    LABEL(lui,           interpret_lui)
+    LABEL(lb,            interpret_lb)
+    LABEL(lh,            interpret_lh)
+    LABEL(lwl,           interpret_lwl)
+    LABEL(lw,            interpret_lw)
+    LABEL(lbu,           interpret_lbu)
+    LABEL(lhu,           interpret_lhu)
+    LABEL(lwr,           interpret_lwr)
+    LABEL(sb,            interpret_sb)
+    LABEL(sh,            interpret_sh)
+    LABEL(swl,           interpret_swl)
+    LABEL(sw,            interpret_sw)
+    LABEL(swr,           interpret_swr)
 
 complete:
     return result;
@@ -372,50 +365,49 @@ void *decode(void *args) {
      *  return k;
      *  */
 
-resume:
-    // ensure the decode queue is empty
-    idecode_wait_taken(id, 0);
-        
-    /* retrive pc */
-    pc = mips->r[MIPS_R_PC];
-
     // handle decoding
-    decode_result_t result = DECODE_CONTINUE;
-    while (result == DECODE_CONTINUE) {
-        // define filled
-        u32 filled = 0;
+    decode_result_t result;
+    do {
+        // ensure the decode queue is empty
+        idecode_wait_taken(id, 0);
+            
+        /* retrive pc */
+        pc = mips->r[MIPS_R_PC];
 
-        // read instructions 
-        memory_read(memory, pc, prefetch, 
-                    PREFETCH_SIZE);
+        do {
+            // define filled
+            u32 filled = 0;
 
-        // decode instructions
-        result = decode_block(decoded, prefetch, &filled);
+            // read instructions 
+            memory_read(memory, pc, 
+                prefetch, PREFETCH_SIZE);
 
-        // enqueue all instructions
-        idecode_batch_enqueue_soa(id, prefetch, 
-                                  decoded, filled);
-    }
+            // decode instructions
+            result = decode_block(
+                decoded, prefetch, &filled);
 
-    // handle branch delays 
-    if (result == DECODE_BRANCH) {
-        // wait untill space for branch delay
-        idecode_wait_space(id, 1);
+            // enqueue all instructions
+            idecode_batch_enqueue_soa(
+                id, prefetch, decoded, filled);
+        } while(result == DECODE_CONTINUE);
+        
+        // handle branch
+        if (result == DECODE_BRANCH) {
+            // wait untill space for branch delay
+            idecode_wait_space(id, 1);
 
-        // enqueue branch delay
-        idecode_enqueue_soa(
-            id, 0, (void *) &interpret_branch_delay);
-
-        // resume decoding
-        goto resume;
-    }
+            // enqueue branch delay
+            idecode_enqueue_soa(id, 0, 
+                (void *) &interpret_branch_delay);
+        }
+    } while (result != DECODE_HALT);
 
     // wait until space for branch delay
     idecode_wait_space(id, 1);
 
     // handle halt
-    idecode_enqueue_soa(
-        id, 0, (void *) &interpret_halt);
+    idecode_enqueue_soa(id, 0,
+        (void *) &interpret_halt);
 
     return NULL;
 }
@@ -433,18 +425,19 @@ void *execute(void *args) {
 
     // predefine BATCH size of executor
     idecode_item_t 
-        items[EXECUTE_BATCH_SIZE];
+        items[EXECUTER_SIZE];
 
     while (!mips->halted) {
         u32 filled_slots = 
             idecode_batch_dequeue(
-                    id, items, EXECUTE_BATCH_SIZE);
+                id, items, EXECUTER_SIZE);
         
         // execute decoded instructions
         for (u32 i = 0; i < filled_slots; i++) {
             mips->r[MIPS_R_PC] += 4;
             mips->r[MIPS_R_CIR] = items[i].opcode;
-
+            
+            /* call instruction */
             ((instruction) items[i].handle)(mips, memory);
         }
     }

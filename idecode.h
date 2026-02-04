@@ -105,7 +105,8 @@ idecode_enqueue_soa(idecode_queue_t *q,
     if (unlikely(head - tail == q->capacity))
         return 0; // full
 
-    q->decoded[head & q->mask] = idecode_item_t{ .opcode = opcode, .handle = handle };
+    q->decoded[head & q->mask] = 
+        (idecode_item_t) { .opcode = opcode, .handle = handle };
 
     atomic_store_explicit(&q->head, head + 1, memory_order_release);
     return 1;
