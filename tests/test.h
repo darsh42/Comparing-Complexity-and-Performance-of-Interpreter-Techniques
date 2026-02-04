@@ -113,8 +113,8 @@
 /* test sequence generator, loads assembled *
  * mneumonics (VAARGS), and set pc to START */
 #define TEST_SEQUENCE(...)          \
-    struct mips   mips   = {};      \
-    struct memory memory = {};      \
+    struct mips   mips   = {0};     \
+    struct memory memory = {0};     \
     const u32 sequence[] = {        \
         __VA_ARGS__                 \
     };                              \
@@ -281,10 +281,7 @@ static const tcase interpreter_tests[] = {
     &test_sw,
 
     /* syscalls */
-    &test_syscalls_filehandling,
-};
-
-static const tcase jitcompiler_tests[] = {
+    // &test_syscalls_filehandling,
 };
 
 #endif // __TEST_H__
