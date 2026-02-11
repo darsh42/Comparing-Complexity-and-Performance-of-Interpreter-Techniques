@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# Layout
+#   abstract
+#     summary
+#   introduction
+#     problem statement
+#     justification of research
+#   background
+#     binary translators
+#     techniques for translation
+#     interpreters
+#     just-in-time (JIT) compilers
+#   methodology
+#     metrics
+#     benchmarks
+#     case-study
+#   design
+#     switch case interpreter
+#     computed-goto interpreter
+#     decoupled block interpreter
+#   implementation
+#     switch case interpreter
+#     computed-goto interpreter
+#     decoupled block interpreter
+#   evaluation
+#   conclusion
+#   future work
+#   bibliography
