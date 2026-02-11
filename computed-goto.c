@@ -98,7 +98,7 @@ do_branch:
     goto *branch_opcode_labels[
         (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];
 
-    LABEL_HALT(ITP_TYPE_SYSCALL, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
+    LABEL_HALT(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
 
     /* create each instruction and label */
     LABEL(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
