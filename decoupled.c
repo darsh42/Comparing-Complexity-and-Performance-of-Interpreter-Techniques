@@ -1,3 +1,60 @@
+/* This system would require some sort of mechanism
+ * to catch self-modifying code!
+ *
+ * compile {
+ *  block b;
+ *  while (non-jump-instructions) {
+ *   read memory
+ *   decode instructions
+ *   add decoded instructions to block
+ *  }
+ *  if (jump instruction was encountered) {
+ *   add branch delay instruction to block
+ *   return block;
+ *  }
+ *  if (halt instruction was encountered) {
+ *   add halt instruction to block
+ *   return block
+ *  }
+ *  return error
+ * }
+ *
+ * decode {
+ *  profile stored jump addresses
+ *  manage code cache
+ *  if (jump address in code cache) {
+ *   push code block to execute queue
+ *  } else {
+ *   block = compile
+ *   push code block to execute queue
+ *   if (jump address exceeds hot threashold) {
+ *    code_cache_add(address, block)
+ *   }
+ *  }
+ * }
+ *
+ * execute {
+ *  while (mips not halted) {
+ *   wait for blocks
+ *
+ *   dequeue block
+ *   execute block
+ *  }
+ * }
+ *
+ * interpreter_decoupled {
+ *  execute queue
+ *  code cache
+ *  code profiler
+ *
+ *  decode args
+ *  execute args
+ *
+ *  spawn execute thread
+ *  spawn decode thread
+ * }
+ * */
+
 #include "common.h"
 #include "log.h"
 
@@ -21,7 +78,7 @@ ITP_INSN(ITP_TYPE_JR, ITP_FORMAT_JR, ITP_JR_IMPL, jr)
 ITP_INSN(ITP_TYPE_JALR, ITP_FORMAT_JALR, ITP_JALR_IMPL, jalr)
 
 ITP_INSN(ITP_TYPE_SYSCALL, ITP_FORMAT_SYSCALL, ITP_SYSCALL_IMPL, syscall)
-ITP_INSN(ITP_TYPE_SYSCALL, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
+ITP_INSN(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
 
 ITP_INSN(ITP_TYPE_MF, ITP_FORMAT_MF, ITP_MFHI_IMPL, mfhi)
 ITP_INSN(ITP_TYPE_MF, ITP_FORMAT_MF, ITP_MFLO_IMPL, mflo)
