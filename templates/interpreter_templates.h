@@ -209,6 +209,12 @@
     a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];              \
     a2 = mips->r[MIPS_R_A2]; a3 = mips->r[MIPS_R_A3];              \
     ITP_LOAD_DELAY
+#define ITP_TYPE_BRK                                               \
+    u32 imm20, v0, a0, a1, a2, a3;                                 \
+    imm20 = (mips->r[MIPS_R_CIR] >> IMM20_SHIFT) & IMM20_MASK;     \
+    v0 = mips->r[MIPS_R_V0];                                       \
+    a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];              \
+    a2 = mips->r[MIPS_R_A2]; a3 = mips->r[MIPS_R_A3];
 #define ITP_TYPE_MULT_DIV                                          \
     u32 value_rs, value_rt;                                        \
     enum MIPS_REG rs, rt;                                          \
