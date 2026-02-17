@@ -16,6 +16,8 @@
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
+
+#include "uthash.h"
 #endif // __MACRO_EXPANSION__
 
 #define CACHELINE_SIZE 64
