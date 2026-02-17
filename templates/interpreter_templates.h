@@ -311,7 +311,8 @@
     default:                                                                          \
         assert(0 && "unknown syscall");                                               \
     }
-#define ITP_BRK_IMPL     (void) imm20;
+#define ITP_BRK_IMPL     (void) imm20; \
+    mips->halted = 1;
 
 #define ITP_MFHI_IMPL mips->r[rd] = mips->r[MIPS_R_HI];
 #define ITP_MFLO_IMPL mips->r[rd] = mips->r[MIPS_R_LO];
@@ -383,12 +384,12 @@
     mips->branch_v = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2); \
     mips->branch_s = DELAY;
 
-#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH }
-#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH }
-#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH }
-#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH }
-#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs <  0) { BRANCH }
-#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs >= 0) { BRANCH }
+#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs <  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs >= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
 
 #define ITP_J_IMPL                                                     \
     mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
@@ -494,7 +495,7 @@
     mips->branch_s     = UNUSED;
 
 #define ITP_HALT_IMPL \
-    mips->halted = true;
+    mips->halted = true; 
 
 /* TODO: */
 #define ITP_SWL_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
