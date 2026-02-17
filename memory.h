@@ -41,7 +41,7 @@ void  print_segment(struct memory *memory, size_t index);
 struct segment *memory_map_address(struct memory *memory, u32 address);
 void memory_read(struct memory *memory, u32 address, u32 *data, u32 size);
 void memory_write(struct memory *memory, u32 address, u32 data, u32 size);
-void memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size);
+u32 memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size);
 void create_memory(struct memory *memory);
 void delete_memory(struct memory *memory);
 

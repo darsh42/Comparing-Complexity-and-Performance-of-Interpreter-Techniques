@@ -65,26 +65,26 @@ struct segment *memory_map_address(struct memory *memory, u32 address) {
     }
     return NULL;
 }
-void memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size) {
+u32 memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size) {
     /* define segment holder */
     struct segment *segment = 
         memory_map_address(memory, address);
     assert(segment != NULL);
 
+    /* if size is too much, change to maximum */
+    size = (size < segment->upper - address) ? 
+        size: segment->upper - address;
+
     /* translate address to segment base */
     address -= segment->lower;
-
-    /* check memory index validity */
-    assert(address <= segment->upper);
-
-    size = (size < segment->upper - segment->lower) ? 
-        size: segment->upper - segment->lower;
 
     /* depending on endianness store value - oppertunities to optimise */
     for (size_t b = 0; b < size; b++) {
         *(((u8 *)data) + b) = 
             *(segment->segment + address + b);
     }
+
+    return size;
 }
 void memory_read(struct memory *memory, u32 address, u32 *data, u32 size) {
     /* define segment holder */
