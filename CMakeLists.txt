@@ -65,6 +65,10 @@ add_executable(computed-goto
     ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c)
 add_executable(decoupled
     ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c)
+add_executable(blocked
+    ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c)
+add_executable(blocked_chaining
+    ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c)
 add_executable(testsuite
     ${CMAKE_CURRENT_SOURCE_DIR}/testsuite.c
     ${CMAKE_CURRENT_SOURCE_DIR}/switch.c
@@ -80,6 +84,12 @@ target_compile_definitions(computed-goto
 target_compile_definitions(decoupled
     PRIVATE
     __DECOUPLED_MAIN__)
+target_compile_definitions(blocked
+    PRIVATE
+    __BLOCKED_MAIN__)
+target_compile_definitions(blocked_chaining
+    PRIVATE
+    __BLOCKED_CHAINING_MAIN__)
 target_compile_definitions(testsuite
     PRIVATE
     __TESTSUITE_MAIN__)
@@ -93,6 +103,14 @@ target_include_directories(computed-goto
     .
     templates)
 target_include_directories(decoupled
+    PRIVATE
+    .
+    templates)
+target_include_directories(blocked
+    PRIVATE
+    .
+    templates)
+target_include_directories(blocked_chaining
     PRIVATE
     .
     templates)
@@ -113,6 +131,16 @@ target_link_libraries(computed-goto
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
 target_link_libraries(decoupled
+    PRIVATE
+    supporting
+    $<$<CONFIG:RELEASE>: release-flags>
+    $<$<CONFIG:DEBUG>: debug-flags>)
+target_link_libraries(blocked
+    PRIVATE
+    supporting
+    $<$<CONFIG:RELEASE>: release-flags>
+    $<$<CONFIG:DEBUG>: debug-flags>)
+target_link_libraries(blocked_chaining
     PRIVATE
     supporting
     $<$<CONFIG:RELEASE>: release-flags>

@@ -351,7 +351,7 @@ void interpreter_decoupled(struct mips   *mips,
 }
 
 
-#ifdef __DECOUPLED_MAIN__
+#ifdef __BLOCKED_CHAINING_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "usage: %s mips.elf\n", *argv);
@@ -376,6 +376,6 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-#endif // __DECOUPLED_MAIN__
+#endif // __BLOCKED_CHAINING_MAIN__
 #endif // __MACRO_EXPANSION__
 
