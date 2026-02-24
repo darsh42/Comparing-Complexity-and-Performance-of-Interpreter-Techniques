@@ -73,6 +73,8 @@ add_executable(testsuite
     ${CMAKE_CURRENT_SOURCE_DIR}/testsuite.c
     ${CMAKE_CURRENT_SOURCE_DIR}/switch.c
     ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c
     ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c)
 
 target_compile_definitions(switch
@@ -95,30 +97,19 @@ target_compile_definitions(testsuite
     __TESTSUITE_MAIN__)
 
 target_include_directories(switch
-    PRIVATE
-    .
-    templates)
+    PRIVATE .)
 target_include_directories(computed-goto
-    PRIVATE
-    .
-    templates)
+    PRIVATE .)
 target_include_directories(decoupled
-    PRIVATE
-    .
-    templates)
+    PRIVATE .)
 target_include_directories(blocked
-    PRIVATE
-    .
-    templates)
+    PRIVATE .)
 target_include_directories(blocked_chaining
-    PRIVATE
-    .
-    templates)
+    PRIVATE .)
 target_include_directories(testsuite
     PRIVATE
     .
-    tests
-    templates)
+    tests)
 
 target_link_libraries(switch
     PRIVATE
