@@ -62,7 +62,7 @@
 #include "memory.h"
 #include "loader.h"
 #include "idecode.h"
-#include "interpreter_templates.h"
+#include "instructions.h"
 
 /* instruction generation */
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)

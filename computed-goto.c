@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "loader.h"
 
-#include "interpreter_templates.h"
+#include "instructions.h"
 
 #define LABEL(type, formatter, impl, name)                      \
     do_ ## name:                                                \

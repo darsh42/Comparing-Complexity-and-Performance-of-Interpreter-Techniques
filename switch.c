@@ -11,7 +11,7 @@
 #include "loader.h"
 
 /* contains templates to construct instructions */
-#include "interpreter_templates.h"
+#include "instructions.h"
 
 /* instruction generation */
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
