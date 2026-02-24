@@ -39,10 +39,27 @@ The key factor here is the tight loop, since the code is being run over and over
 ### Cyclic Redundance Check (CRC)
 ### Binary Search
 **what is Binary Search**
+Binary Search is an efficient searching technique. 
+The algorithm indexes into arrays in less predictable patterns than linear search putting strain on speculative execution.
+
+The designed binary search is going to be the following:
+
+10000 integer elements, these are sorted, each member having its index being the value.
+
 **why should Binary Search be used?**
+Simple, easy to compare performance figures, time is the main consideration, puts strain on branch handling.
+Targets the branch/jump logic.
+
 **what are the expected performance results of Binary Search?**
+
 ### Linked List
+**what is a linked list**
+**why should a linked list be used?**
+**what are the performance expectations?**
 ### Quick Sort
+**what is quick sort**
+**why should quick sort be used?**
+**what are the performance expectations?**
 
 ### NAS NASA NPB Serial Integer Sort
 To create a realistic workload on the interpreters the NAS NASA benchmarking suite will be used, the benchmarks are intended for testing parallel systems but there are also serial versions of each of the benchmarks. Using the benchmarks, the designs of each of the interpreters can be evaluated on a realistic workload.
