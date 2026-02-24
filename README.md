@@ -24,6 +24,7 @@ compile examples
 ```bash
 cd samples
 cmake -S . -B ../build-samples
+cd ..
 make -C build-samples
 ```
 
@@ -31,11 +32,13 @@ make -C build-samples
 ## Usage
 Currently there are three binaries compiled with the default build command.
 
-### interpreter and jitcompiler
+### interpreter
+```
 "switch" is the switch based interpreter
 "computed-goto" is the computed goto based interpreter
 "blocked" is the block based interpreter
 "blocked_chaining" is the block based chaining interpreter
+```
 ```bash
 make -C build
 ```
