@@ -66,6 +66,10 @@ extern void interpreter_computed_goto(
         struct mips *mips, struct memory *memory);
 extern void interpreter_decoupled(
         struct mips *mips, struct memory *memory);
+extern void interpreter_blocked(
+        struct mips *mips, struct memory *memory);
+extern void interpreter_blocked_chaining(
+        struct mips *mips, struct memory *memory);
 
 int main(int argc, char **argv) {
     /* maybe put test selection */
@@ -82,10 +86,22 @@ int main(int argc, char **argv) {
         interpreter_tests[c](&interpreter_computed_goto);
     fprintf(stderr, "COMPUTED GOTO MODEL TEST SUITE FINISHED\n");
 
+    fprintf(stderr, "BLOCKED MODEL TEST SUITE STARTED\n");
+    for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
+        interpreter_tests[c](&interpreter_blocked);
+    fprintf(stderr, "BLOCKED MODEL TEST SUITE FINISHED\n");
+
+    fprintf(stderr, "BLOCKED CHAINING MODEL TEST SUITE STARTED\n");
+    for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
+        interpreter_tests[c](&interpreter_blocked_chaining);
+    fprintf(stderr, "BLOCKED CHAINING TEST SUITE FINISHED\n");
+
+#if 0
     fprintf(stderr, "DECOUPLED MODEL TEST SUITE STARTED\n");
     for (size_t c = 0; c < SIZEOF_ARRAY(interpreter_tests); c++)
         interpreter_tests[c](&interpreter_decoupled);
     fprintf(stderr, "DECOUPLED MODEL TEST SUITE FINISHED\n");
+#endif
 
     return 0;
 }

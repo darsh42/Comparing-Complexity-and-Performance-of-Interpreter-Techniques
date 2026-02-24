@@ -144,8 +144,8 @@ typedef struct block {
     UT_hash_handle hh;                      /* make this structure hashable  */
 } block_t;
 
-block_t *decode_block(struct mips   *mips,
-                     struct memory *memory) {
+static block_t *decode_block(struct mips   *mips,
+                             struct memory *memory) {
     
 
     /* define each label array */                                
@@ -288,8 +288,8 @@ complete:
     return blk;
 }
 
-void interpreter_decoupled(struct mips   *mips, 
-                           struct memory *memory) {
+void interpreter_blocked_chaining(struct mips   *mips, 
+                                  struct memory *memory) {
     // all blocks so they can be freed at end of application
     block_t *blocks = NULL;
 
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
     loader_elf(&mips, &memory, *++argv);
     
     /* start the decoupled interpreter */
-    interpreter_decoupled(&mips, &memory);
+    interpreter_blocked_chaining(&mips, &memory);
 
     /* clean up */
     delete_memory(&memory);
