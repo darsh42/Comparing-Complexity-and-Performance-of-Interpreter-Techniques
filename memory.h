@@ -11,6 +11,12 @@ typedef uint32_t u32;
 typedef uint16_t u16;
 typedef  uint8_t  u8;
 
+#define USER_TOP  0x80000000
+
+#define STACK_PERM 255
+#define STACK_SIZE 0x1000
+#define STACK_TOP USER_TOP
+#define STACK_BOT STACK_TOP - STACK_SIZE
 
 struct segment {
     /* lowest and highest address */
@@ -21,13 +27,10 @@ struct segment {
     u8 *segment;
 };
 
-typedef void (*fn_read) (struct segment *, u32, u32*, u32);
-typedef void (*fn_write)(struct segment *, u32, u32,  u32);
-
 struct memory {
-    /* read and writers based on endianess */
-    fn_read  read;
-    fn_write write;
+    /* heap addresses */
+    u32 heap_start;
+    u32 heap_end;
 
     /* memory sections and the address ranges */
     struct segment *segments;

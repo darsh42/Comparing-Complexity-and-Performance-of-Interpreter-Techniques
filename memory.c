@@ -131,8 +131,6 @@ void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
 
 void create_memory(struct memory *memory) {
     /* ensure memory is empty */
-    assert(memory->read == NULL);
-    assert(memory->write == NULL);
     assert(memory->segments == NULL);
     assert(memory->segments_count == 0);
 
