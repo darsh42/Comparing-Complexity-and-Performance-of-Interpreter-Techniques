@@ -86,14 +86,12 @@ ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
 #ifndef __MACRO_EXPANSION__
 
-#define DISPATCH                                      \
-    do {                                              \
-        if (i < remaining) {                          \
-            goto *primary[                            \
-                (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
-        }                                             \
-        continue;                                     \
-    } while(0)
+#define DISPATCH                                  \
+    if (i < remaining) {                          \
+        goto *primary[                            \
+            (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
+    }                                             \
+    continue;                                     \
 
 #define DARRAY_PUSH(ops, function)                       \
     do {                                                 \
@@ -188,20 +186,20 @@ static block_t *decode_block(struct mips   *mips,
         [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
     };
 
-    u32 prefetch[64], finished = 0, pc = mips->r[MIPS_R_PC];
+    u32 prefetch[64] = {0}, finished = 0, pc = mips->r[MIPS_R_PC];
 
     // ops dynamic array values;
     u32  size = 0, capacity = 32;
     op_t *ops = malloc(sizeof(*ops) * capacity);
 
     for (;;) {
-        s32 i = 0;
+        u32 i = 0;
 
         u32 remaining = 
             memory_read_chunk(
-                memory, pc, prefetch, 64)/sizeof(u32);
+                memory, pc, prefetch, 64*sizeof(u32))/sizeof(u32);
 
-        pc += 64;
+        pc += remaining;
 
         /* start dispatch chain */
         DISPATCH;
@@ -293,29 +291,39 @@ void interpreter_blocked_chaining(struct mips   *mips,
     // all blocks so they can be freed at end of application
     block_t *blocks = NULL;
 
-    u32 branch_taken = 0;
-
     block_t *prev_blk = NULL;
     block_t *curr_blk = NULL;
 
     for (;;) {
         if (curr_blk == NULL) {
-            curr_blk = 
-                decode_block(mips, memory);
+            // try to find a block that starts at the current address
+            HASH_FIND(hh, blocks, &mips->r[MIPS_R_PC], 
+                sizeof(u32), curr_blk);
+            
+            // if no block is found
+            if (curr_blk == NULL) {
+                // decode a new block
+                curr_blk = 
+                    decode_block(mips, memory);
+                
+                // check that the block has been made
+                assert(curr_blk != NULL && "NULL block");
 
-            assert(curr_blk != NULL && "NULL block");
-
-            // update previous block with the new block
-            if (prev_blk) {
-                *((branch_taken) ? &prev_blk->jump:
-                                   &prev_blk->cont) = curr_blk;
+                // add the block to the hash so it can be found later
+                HASH_ADD(hh, blocks, 
+                    address, sizeof(u32), curr_blk);
             }
-        
-            // add the block to the hash so it can be 
-            // deleted (this can be changed to a darray)
-            HASH_ADD(hh, blocks, 
-                address, sizeof(u32), curr_blk);
+
+            // update previous block so no hash 
+            // lookup will be needed in the future
+            if (prev_blk) {
+                *((mips->branched) ? &prev_blk->jump:
+                                     &prev_blk->cont) = curr_blk;
+            }
         }
+
+        // reset branch state
+        mips->branched = false;
 
         for (u32 i = 0; i < curr_blk->size; i++) {
             op_t o = curr_blk->ops[i];
@@ -324,22 +332,24 @@ void interpreter_blocked_chaining(struct mips   *mips,
             o.op(mips, memory);
         }
 
+        // stop the interpreter if halted
         if (mips->halted)
             break;
 
+        // set the branched address
+        if (mips->branched)
+            mips->r[MIPS_R_PC] = mips->branch_v;
+        
+        // prepare for next block
         prev_blk = curr_blk;
 
-        // branch taken is determined by if the
-        // current branching value is the same 
-        // as previously
-        branch_taken = 
-            (mips->r[MIPS_R_PC] != mips->branch_v);
-
         // set the new block as appropriate
-        curr_blk = (branch_taken) ?
+        curr_blk = (mips->branched) ?
             prev_blk->jump: prev_blk->cont;
 
-        mips->r[MIPS_R_PC] = mips->branch_v;
+#ifdef DISASSEMBLE_ENABLE
+        printf("\n");
+#endif
     }
 
     block_t *b, *t;
@@ -349,7 +359,6 @@ void interpreter_blocked_chaining(struct mips   *mips,
         free(b);
     }
 }
-
 
 #ifdef __BLOCKED_CHAINING_MAIN__
 int main(int argc, char **argv) {
@@ -378,4 +387,3 @@ int main(int argc, char **argv) {
 }
 #endif // __BLOCKED_CHAINING_MAIN__
 #endif // __MACRO_EXPANSION__
-
