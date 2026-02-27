@@ -4,6 +4,7 @@
 #include "syscalls.h"
 
 #define DISASSEMBLE_ENABLE
+// #define  LOAD_DELAY_ENABLE
 
 /*****************************************************
  *               instruction builder                 *
@@ -22,10 +23,14 @@
  *  - easier to read the instruction implementations *
  *    as they are separated from the boiler plate    *
  *****************************************************/
+#ifdef LOAD_DELAY_ENABLE
 #define ITP_LOAD_DELAY                             \
         mips->r[mips->load_d]= mips->load_v;       \
         mips->r[MIPS_R_ZERO] = 0;                  \
         mips->load_d         = MIPS_R_GARBAGE;      
+#else  // LOAD_DELAY_ENABLE
+#define ITP_LOAD_DELAY
+#endif // LOAD_DELAY_ENABLE
 
 #ifdef DISASSEMBLE_ENABLE
 #define ITP_INSN(type, formatter, impl, name)           \
@@ -293,10 +298,12 @@
 #define ITP_SRAV_IMPL mips->r[rd] = (u32)((s32)value_rt >> (value_rs & 0x1f));
 
 #define ITP_JR_IMPL            \
+    mips->branched = true;     \
     mips->branch_v = value_rs; \
     mips->branch_s = DELAY;
 
 #define ITP_JALR_IMPL                     \
+    mips->branched = true;                \
     mips->r[rd] = mips->r[MIPS_R_PC] + 4; \
     mips->branch_v = value_rs;            \
     mips->branch_s = DELAY;
@@ -381,20 +388,23 @@
 #define ITP_NOR_IMPL  mips->r[rd] = ~(value_rs | value_rt);
 
 #define BRANCH                                                      \
+    mips->branched = true;                                          \
     mips->branch_v = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2); \
     mips->branch_s = DELAY;
 
-#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
-#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
-#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
-#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
-#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs <  0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
-#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs >= 0) { BRANCH } else { mips->branch_v = mips->r[MIPS_R_PC]; }
+#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH }
+#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH }
+#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH }
+#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH }
+#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs <  0) { BRANCH }
+#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs >= 0) { BRANCH }
 
 #define ITP_J_IMPL                                                     \
+    mips->branched = true;                                             \
     mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
     mips->branch_s = DELAY;
 #define ITP_JAL_IMPL                                                   \
+    mips->branched = true;                                             \
     mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4;                       \
     mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
     mips->branch_s = DELAY;
@@ -422,6 +432,7 @@
 
 #define LOAD_COMPUTE_ADDRESS ((s32) (s16) imm16) + value_rs
 
+#ifdef LOAD_DELAY_ENABLE
 #define ITP_LB_IMPL                              \
     u32 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
@@ -483,6 +494,43 @@
         ITP_LOAD_DELAY                            \
     }                                             \
     mips->load_v = read;
+#else  // LOAD_DELAY_ENABLE
+#define ITP_LB_IMPL                              \
+    u32 read = 0;                                \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    memory_read(memory, address, &read, 1);      \
+    mips->r[rt] = (s32) (s8) read;
+#define ITP_LH_IMPL                              \
+    u32 read = 0;                                \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    memory_read(memory, address, &read, 2);      \
+    mips->r[rt] = (s32) (s16) read;
+#define ITP_LW_IMPL                              \
+    u32 read = 0;                                \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    memory_read(memory, address, &read, 4);      \
+    mips->r[rt] = read;
+#define ITP_LBU_IMPL                             \
+    u32 read = 0;                                \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    memory_read(memory, address, &read, 1);      \
+    mips->r[rt] = read;
+#define ITP_LHU_IMPL                             \
+    u32 read = 0;                                \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    memory_read(memory, address, &read, 2);      \
+    mips->r[rt] = read;
+#define ITP_LWL_IMPL /* TODO: */                  \
+    u32 read = 0;                                 \
+    u32 address = LOAD_COMPUTE_ADDRESS;           \
+    memory_read(memory, address & ~0x3, &read, 2);\
+    mips->r[rt] = read;
+#define ITP_LWR_IMPL /* TODO: */                  \
+    u32 read = 0;                                 \
+    u32 address = LOAD_COMPUTE_ADDRESS;           \
+    memory_read(memory, address & ~0x3, &read, 2);\
+    mips->r[rt] = read;
+#endif // LOAD_DELAY_ENABLE
 
 #define STORE_COMPUTE_ADDRESS ((s32) (s16) imm16) + value_rs
 
