@@ -84,45 +84,44 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
-#ifndef __MACRO_EXPANSION__
 
 #define DISPATCH                                  \
     if (i < remaining) {                          \
         goto *primary[                            \
             (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
     }                                             \
-    continue;                                     \
+    continue
 
-#define DARRAY_PUSH(ops, function)                       \
-    do {                                                 \
-        if (size == capacity) {                          \
-            capacity *= 2;                               \
-            ops = realloc(                               \
-                ops, sizeof(*ops) * capacity);           \
-        }                                                \
-        ops[size++] = (op_t) {                           \
-            .cir = prefetch[i], .op = function           \
-        };                                               \
-        i++;                                             \
+#define DARRAY_PUSH(ops, function)                \
+    do {                                          \
+        if (size == capacity) {                   \
+            capacity *= 2;                        \
+            ops = realloc(                        \
+                ops, sizeof(*ops) * capacity);    \
+        }                                         \
+        ops[size++] = (op_t) {                    \
+            .cir = prefetch[i], .op = function    \
+        };                                        \
+        i++;                                      \
     } while(0)
 
-#define LABEL(name, function)        \
-    do_ ## name:                     \
-        DARRAY_PUSH(ops, &function); \
-        if (!finished) {             \
-            DISPATCH;                \
-        }                            \
+#define LABEL(name, function)                     \
+    do_ ## name:                                  \
+        DARRAY_PUSH(ops, &function);              \
+        if (!finished) {                          \
+            DISPATCH;                             \
+        }                                         \
         goto complete
 
-#define LABEL_BRANCH(name, function) \
-    do_ ## name:                     \
-        finished = 1;                \
-        DARRAY_PUSH(ops, &function); \
+#define LABEL_BRANCH(name, function)              \
+    do_ ## name:                                  \
+        finished = 1;                             \
+        DARRAY_PUSH(ops, &function);              \
         DISPATCH
 
-#define LABEL_HALT(name, function)   \
-    do_ ## name:                     \
-        DARRAY_PUSH(ops, &function); \
+#define LABEL_HALT(name, function)                \
+    do_ ## name:                                  \
+        DARRAY_PUSH(ops, &function);              \
         goto complete
 
 typedef struct {
@@ -186,6 +185,9 @@ static block_t *decode_block(struct mips   *mips,
         [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
     };
 
+    // create block variable 
+    block_t *blk = NULL;
+
     u32 prefetch[64] = {0}, finished = 0, pc = mips->r[MIPS_R_PC];
 
     // ops dynamic array values;
@@ -195,9 +197,8 @@ static block_t *decode_block(struct mips   *mips,
     for (;;) {
         u32 i = 0;
 
-        u32 remaining = 
-            memory_read_chunk(
-                memory, pc, prefetch, 64*sizeof(u32))/sizeof(u32);
+        u32 remaining = memory_read_chunk(memory, 
+            pc, prefetch, 64*sizeof(u32))/sizeof(u32);
 
         pc += remaining;
 
@@ -273,8 +274,6 @@ do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
     }
 
 complete:
-    
-    block_t *blk = NULL;
 
     blk = malloc(sizeof(*blk));
     blk->address = mips->r[MIPS_R_PC];
@@ -285,6 +284,8 @@ complete:
 
     return blk;
 }
+
+#ifndef __MACRO_EXPANSION__
 
 void interpreter_blocked_chaining(struct mips   *mips, 
                                   struct memory *memory) {
