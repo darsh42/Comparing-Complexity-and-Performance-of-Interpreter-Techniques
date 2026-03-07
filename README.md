@@ -7,11 +7,20 @@ Download the required build tools
 apt install cmake make
 ```
 
+Download the complexity analyzation tools
+- lizard
+- joern
+
 ## Build
 Clone source 
 ```bash
 https://github.com/darsh42/dissertation
 cd dissertation
+```
+
+download and setup supported compilers and tools
+```bash
+./create_toolchain.sh
 ```
 
 compile interpreters
@@ -22,12 +31,9 @@ make -C build
 
 compile examples
 ```bash
-cd samples
-cmake -S . -B ../build-samples
-cd ..
+cmake -S samples -B build-samples
 make -C build-samples
 ```
-
 
 ## Usage
 Currently there are three binaries compiled with the default build command.
