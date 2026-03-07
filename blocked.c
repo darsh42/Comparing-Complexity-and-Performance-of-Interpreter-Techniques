@@ -84,47 +84,43 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
-#ifndef __MACRO_EXPANSION__
+#define DISPATCH                                  \
+    if (i < remaining) {                          \
+        goto *primary[                            \
+            (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
+    }                                             \
+    continue
 
-#define DISPATCH                                      \
-    do {                                              \
-        if (i < remaining) {                          \
-            goto *primary[                            \
-                (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
-        }                                             \
-        continue;                                     \
+#define DARRAY_PUSH(ops, function)                \
+    do {                                          \
+        if (size == capacity) {                   \
+            capacity *= 2;                        \
+            ops = realloc(                        \
+                ops, sizeof(*ops) * capacity);    \
+        }                                         \
+        ops[size++] = (op_t) {                    \
+            .cir = prefetch[i], .op = function    \
+        };                                        \
+        i++;                                      \
     } while(0)
 
-#define DARRAY_PUSH(ops, function)                       \
-    do {                                                 \
-        if (size == capacity) {                          \
-            capacity *= 2;                               \
-            ops = realloc(                               \
-                ops, sizeof(*ops) * capacity);           \
-        }                                                \
-        ops[size++] = (op_t) {                           \
-            .cir = prefetch[i], .op = function           \
-        };                                               \
-        i++;                                             \
-    } while(0)
-
-#define LABEL(name, function)        \
-    do_ ## name:                     \
-        DARRAY_PUSH(ops, &function); \
-        if (!finished) {             \
-            DISPATCH;                \
-        }                            \
+#define LABEL(name, function)                     \
+    do_ ## name:                                  \
+        DARRAY_PUSH(ops, &function);              \
+        if (!finished) {                          \
+            DISPATCH;                             \
+        }                                         \
         goto complete
 
-#define LABEL_BRANCH(name, function) \
-    do_ ## name:                     \
-        finished = 1;                \
-        DARRAY_PUSH(ops, &function); \
+#define LABEL_BRANCH(name, function)              \
+    do_ ## name:                                  \
+        finished = 1;                             \
+        DARRAY_PUSH(ops, &function);              \
         DISPATCH
 
-#define LABEL_HALT(name, function)   \
-    do_ ## name:                     \
-        DARRAY_PUSH(ops, &function); \
+#define LABEL_HALT(name, function)                \
+    do_ ## name:                                  \
+        DARRAY_PUSH(ops, &function);              \
         goto complete
 
 typedef struct {
@@ -137,16 +133,12 @@ typedef struct block {
     u32 address;                            /* key + start address of block  */
     u32 size;                               /* number of operations in block */
     op_t *ops;                              /* operations in a block         */
-    
-    struct block *jump;                     /* if the branch is taken, the next block */
-    struct block *cont;                     /* if the branch is not taken the next block */
 
     UT_hash_handle hh;                      /* make this structure hashable  */
 } block_t;
 
 static block_t *decode_block(struct mips   *mips,
                              struct memory *memory) {
-    
 
     /* define each label array */                                
     static const void *primary[] = {
@@ -188,20 +180,22 @@ static block_t *decode_block(struct mips   *mips,
         [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
     };
 
-    u32 prefetch[64], finished = 0, pc = mips->r[MIPS_R_PC];
+    // create block variable 
+    block_t *blk = NULL;
+
+    u32 prefetch[64] = {0}, finished = 0, pc = mips->r[MIPS_R_PC];
 
     // ops dynamic array values;
     u32  size = 0, capacity = 32;
     op_t *ops = malloc(sizeof(*ops) * capacity);
 
     for (;;) {
-        s32 i = 0;
+        u32 i = 0;
 
-        u32 remaining = 
-            memory_read_chunk(
-                memory, pc, prefetch, 64)/sizeof(u32);
+        u32 remaining = memory_read_chunk(memory, 
+            pc, prefetch, 64*sizeof(u32))/sizeof(u32);
 
-        pc += 64;
+        pc += remaining;
 
         /* start dispatch chain */
         DISPATCH;
@@ -276,19 +270,15 @@ do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
 
 complete:
     
-    block_t *blk = NULL;
-
     blk = malloc(sizeof(*blk));
     blk->address = mips->r[MIPS_R_PC];
     blk->size    = size;
     blk->ops     = ops;
-    blk->jump    = NULL;
-    blk->cont    = NULL;
 
     return blk;
 }
 
-
+#ifndef __MACRO_EXPANSION__
 void interpreter_blocked(struct mips   *mips, 
                          struct memory *memory) {
     block_t *blocks = NULL;
@@ -355,4 +345,3 @@ int main(int argc, char **argv) {
 }
 #endif // __BLOCKED_MAIN__
 #endif // __MACRO_EXPANSION__
-
