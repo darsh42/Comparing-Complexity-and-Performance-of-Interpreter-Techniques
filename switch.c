@@ -196,6 +196,7 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
     }
 }
 
+#ifndef __MACRO_EXPANSION__
 #ifdef __SWITCH_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -223,3 +224,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 #endif // __SWITCH_MAIN__
+#endif // __MACRO_EXPANSION__
