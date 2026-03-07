@@ -175,6 +175,7 @@ do_branch:
     LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 }
 
+#ifndef __MACRO_EXPANSION__
 #ifdef __COMPUTED_GOTO_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -200,3 +201,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 #endif // __COMPUTED_GOTO_MAIN__
+#endif // __MACRO_EXPANSION__
