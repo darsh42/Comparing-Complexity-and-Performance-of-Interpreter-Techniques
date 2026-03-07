@@ -142,9 +142,6 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
-#define PREFETCH_SIZE ((CACHELINE_SIZE / sizeof(void *))+1)
-#define EXECUTER_SIZE  (CACHELINE_SIZE / sizeof(void *))
-
 #define DISPATCH                                                \
     goto *primary_opcode_labels[                                \
         (*prefetch >> OP_SHIFT) & OP_MASK];
@@ -219,7 +216,7 @@ decode_result_t decode_block(void **decoded, u32 *prefetch, u32 *filled) {
      * the last instruction in the pref- *
      * etcher is a branch as then we can *
      * complete the load delay           */
-    u32 remaining = PREFETCH_SIZE - 1;
+    u32 remaining = ((CACHELINE_SIZE / sizeof(void *))+1) - 1;
 
     /* define each label array */                                
     void *primary_opcode_labels[] = {
@@ -338,6 +335,11 @@ do_branch:
 complete:
     return result;
 }
+
+#ifndef __MACRO_EXPANSION__
+
+#define PREFETCH_SIZE ((CACHELINE_SIZE / sizeof(void *))+1)
+#define EXECUTER_SIZE  (CACHELINE_SIZE / sizeof(void *))
 
 void *decode(void *args) {
     /*
@@ -561,3 +563,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 #endif // __DECOUPLED_MAIN__
+#endif // __MACRO_EXPANSION__
