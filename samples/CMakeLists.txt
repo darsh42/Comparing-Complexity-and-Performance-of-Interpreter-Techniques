@@ -6,7 +6,7 @@ project(mips-binary
     LANGUAGES C)
 
 ## set the correct mips c compiler
-set(CMAKE_C_COMPILER mipsel-linux-gnu-gcc)
+set(CMAKE_C_COMPILER ../build-tools/bin/mipsel-linux-musl-gcc)
 
 ## libraries
 add_library(compile-flags INTERFACE)
