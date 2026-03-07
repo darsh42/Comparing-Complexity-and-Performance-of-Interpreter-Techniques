@@ -112,23 +112,26 @@
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_BRANCH_GENERIC(name)                      \
-    printf("  %x:\t%08x\t%s %s, %hd\n", mips->r[MIPS_R_PC],  \
-                                        mips->r[MIPS_R_CIR], \
-                                        name,                \
-                                        register_names[rs],  \
-                                        imm16);
+    printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
+                                                 mips->r[MIPS_R_CIR], \
+                                                 name,                \
+                                                 register_names[rs],  \
+                                                 imm16,               \
+                                                 mips->branch_v);
 #define ITP_FORMAT_J_JAL(name)                              \
-    printf("  %x:\t%08x\t%s 0x%07x\n", mips->r[MIPS_R_PC],  \
-                                       mips->r[MIPS_R_CIR], \
-                                       name,                \
-                                       imm26);
+    printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC],  \
+                                                mips->r[MIPS_R_CIR], \
+                                                name,                \
+                                                imm26,               \
+                                                mips->branch_v);
 #define ITP_FORMAT_BRANCH_EQ_NE(name)           \
-    printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
-                                            mips->r[MIPS_R_CIR], \
-                                            name,                \
-                                            register_names[rs],  \
-                                            register_names[rt],  \
-                                            imm16);
+    printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
+                                                     mips->r[MIPS_R_CIR], \
+                                                     name,                \
+                                                     register_names[rs],  \
+                                                     register_names[rt],  \
+                                                     imm16,               \
+                                                     mips->branch_v);
 #define ITP_FORMAT_ALU_IMM(name)            \
     printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
                                             mips->r[MIPS_R_CIR], \
