@@ -3,13 +3,6 @@
   import io.shiftleft.semanticcpg.language._
   import io.joern.dataflowengineoss.language._
 
-  val methods = (
-    "interpreter_switch",
-    "interpreter_computed_goto",
-    "interpreter_decoupled",
-    "interpreter_blocked",
-    "interpreter_blocked_chaining")
-
   // define the output path
   val output_path = Paths.get(output)
 
