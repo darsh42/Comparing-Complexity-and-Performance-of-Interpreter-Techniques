@@ -1,6 +1,23 @@
 #ifndef __MIPS_SYSCALLS__
 #define __MIPS_SYSCALLS__
 
+// The MIPS O32 Base Offset
+#define MIPS_NR_Linux          4000
+
+// Internal Syscall Numbers (Offset from 4000)
+#define MIPS_SYS_read          3
+#define MIPS_SYS_write         4
+#define MIPS_SYS_open          5
+#define MIPS_SYS_close         6
+#define MIPS_SYS_lseek         19
+#define MIPS_SYS_set_tid_addr  283
+#define MIPS_SYS_exit_group    210
+
+// The actual values musl will put in $v0
+#define MIPS_SYSCALL_READ      (MIPS_NR_Linux + MIPS_SYS_read)
+#define MIPS_SYSCALL_WRITE     (MIPS_NR_Linux + MIPS_SYS_write)
+
+
 /* \brief syscall to read file descriptor
  *
  * \param mips   pointer to instance mips
@@ -19,7 +36,7 @@ static inline void mips_syscall_read(struct mips *mips, struct memory *memory,
     /* compute offset into segment */
     address -= segment->lower;
     /* call host and store results in %v0 */
-    mips->r[MIPS_R_V0] = 
+    mips->r[MIPS_R_A3] = 
         read(fd, (void *) (segment->segment+address), size);
 }
 
@@ -41,7 +58,7 @@ static inline void mips_syscall_write(struct mips *mips, struct memory *memory,
     /* compute offset into segment */
     address -= segment->lower;
     /* call host and store results in %v0 */
-    mips->r[MIPS_R_V0] = 
+    mips->r[MIPS_R_A3] = 
         write(fd, (void *) (segment->segment+address), size);
 }
 
@@ -63,7 +80,7 @@ static inline void mips_syscall_open(struct mips *mips, struct memory *memory,
     /* compute offset into segment */
     name -= segment->lower;
     /* call host and store results in v0 */
-    mips->r[MIPS_R_V0] = (flags & O_CREAT) ?
+    mips->r[MIPS_R_A3] = (flags & O_CREAT) ?
         open((char *) segment->segment+name, flags, mode & 0777):
         open((char *) segment->segment+name, flags);
 }
@@ -80,7 +97,7 @@ static inline void mips_syscall_close(struct mips *mips, struct memory *memory,
                                       u32 fd, u32 _a1, u32 _a2, u32 _a3) {
     (void) _a1; (void) _a2; (void) _a3;
     /* call host and store results in v0 */
-    mips->r[MIPS_R_V0] = close(fd);
+    mips->r[MIPS_R_A3] = close(fd);
 }
 
 /* \brief syscall to close a file descriptor
@@ -96,9 +113,35 @@ static inline void mips_syscall_lseek(struct mips *mips, struct memory *memory,
                                       u32 fd, u32 offset, u32 whence, u32 _a3) {
     (void) _a3;
     /* call host and store results in v0 */
-    mips->r[MIPS_R_V0] = lseek(fd, offset, whence);
+    mips->r[MIPS_R_A3] = lseek(fd, offset, whence);
 }
 
+/* \brief syscall to terminate all threads in a process
+ *
+ * \param mips   pointer to instance mips
+ * \param memory pointer to instance memory
+ *
+ * \param %a0 -> status - the exit status for the entire process
+ */
+static inline void mips_syscall_exit_group(struct mips *mips, struct memory *memory,
+                                           u32 _a0, u32 _a1, u32 _a2, u32 _a3) {
+}
+
+/* \brief syscall to terminate all threads in a process
+ *
+ * \param mips   pointer to instance mips
+ * \param memory pointer to instance memory
+ *
+ * \param %a0 -> status - the exit status for the entire process
+ */
+static inline void mips_syscall_tid_addr(struct mips *mips, struct memory *memory,
+                                         u32 _a0, u32 _a1, u32 _a2, u32 _a3) {
+    // Since running a single process, returning '1' is standard.
+    mips->r[MIPS_R_V0] = 1;
+
+    // Signal Success in a3 (MIPS O32 convention)
+    mips->r[MIPS_R_A3] = 0;
+}
 
 #endif // __MIPS_SYSCALLS__
 

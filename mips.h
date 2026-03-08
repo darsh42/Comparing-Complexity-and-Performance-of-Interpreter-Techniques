@@ -41,13 +41,16 @@
     X(MIPS_R_GARBAGE, 36, "")\
     X(MIPS_R_REG_MAX, 37, "")\
 
+#define __MIPS_SYSCALL_NR 4000
 #define __SYSCALLS \
-    X(MIPS_SYSCALL_READ,   0, "syscall_read")  \
-    X(MIPS_SYSCALL_WRITE,  1, "syscall_write") \
-    X(MIPS_SYSCALL_OPEN,   2, "syscall_open")  \
-    X(MIPS_SYSCALL_CLOSE,  3, "syscall_close") \
-    X(MIPS_SYSCALL_LSEEK,  4, "syscall_lseek") \
-    X(MIPS_SYSCALL_MAX,    5, "syscall_max")
+    X(MIPS_SYSCALL_READ,          3 + __MIPS_SYSCALL_NR, "syscall_read")  \
+    X(MIPS_SYSCALL_WRITE,         4 + __MIPS_SYSCALL_NR, "syscall_write") \
+    X(MIPS_SYSCALL_OPEN,          5 + __MIPS_SYSCALL_NR, "syscall_open")  \
+    X(MIPS_SYSCALL_CLOSE,         6 + __MIPS_SYSCALL_NR, "syscall_close") \
+    X(MIPS_SYSCALL_LSEEK,        19 + __MIPS_SYSCALL_NR, "syscall_lseek") \
+    X(MIPS_SYSCALL_EXIT_GROUP,  210 + __MIPS_SYSCALL_NR, "syscall_exit_group") \
+    X(MIPS_SYSCALL_TID_ADDR,    283 + __MIPS_SYSCALL_NR, "syscall_tid_addr")
+
 
 enum MIPS_SECTION {
     OLD_BLOCK = 0,
