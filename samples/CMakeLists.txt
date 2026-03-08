@@ -6,7 +6,7 @@ project(mips-binary
     LANGUAGES C)
 
 ## set the correct mips c compiler
-set(CMAKE_C_COMPILER ../build-tools/bin/mipsel-linux-musl-gcc)
+set(CMAKE_C_COMPILER ../build-tools/bin/mipsel-linux-muslsf-gcc)
 
 ## libraries
 add_library(compile-flags INTERFACE)
@@ -17,7 +17,7 @@ target_compile_options(compile-flags
     -static
     -fno-pie
     -Wall 
-    -O0
+    -g
     -mfp32
     -march=r3000
     -mexplicit-relocs
@@ -26,9 +26,7 @@ target_compile_options(compile-flags
 
 target_link_options(compile-flags
     INTERFACE
-    -static
-    -no-pie
-    -Wl,-no-pie)
+    -static)
 
 ## executables
 add_executable(binary_search ${CMAKE_CURRENT_SOURCE_DIR}/binary_search.c)

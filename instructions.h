@@ -37,8 +37,8 @@
     static void interpret_##name(struct mips *mips,     \
                           struct memory *memory) {      \
         type                                            \
-        impl                                            \
         formatter(#name)                                \
+        impl                                            \
     }
 #else
 #define ITP_INSN(type, formatter, impl, name)          \
@@ -311,18 +311,19 @@
     mips->branch_v = value_rs;            \
     mips->branch_s = DELAY;
 
-#define ITP_SYSCALL_IMPL                                                                        \
-    switch (v0) {                                                                               \
-    case MIPS_SYSCALL_READ:       mips_syscall_read (mips, memory, a0, a1, a2, a3);      break; \
-    case MIPS_SYSCALL_WRITE:      mips_syscall_write(mips, memory, a0, a1, a2, a3);      break; \
-    case MIPS_SYSCALL_OPEN:       mips_syscall_open (mips, memory, a0, a1, a2, a3);      break; \
-    case MIPS_SYSCALL_CLOSE:      mips_syscall_close(mips, memory, a0, a1, a2, a3);      break; \
-    case MIPS_SYSCALL_LSEEK:      mips_syscall_lseek(mips, memory, a0, a1, a2, a3);      break; \
-    case MIPS_SYSCALL_EXIT_GROUP: mips_syscall_exit_group(mips, memory, a0, a1, a2, a3); break; \
-    case MIPS_SYSCALL_TID_ADDR:   mips_syscall_tid_addr(mips, memory, a0, a1, a2, a3);   break; \
-    default:                                                                                    \
-        fprintf(stderr, "Unhandled Syscall: %d\n", v0);                                         \
-        assert(0 && "unknown syscall");                                                         \
+#define ITP_SYSCALL_IMPL                                                                          \
+    switch (v0) {                                                                                 \
+    case __NR_read:            mips_syscall_read (mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_write:           mips_syscall_write(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_open:            mips_syscall_open (mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_close:           mips_syscall_close(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_lseek:           mips_syscall_lseek(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_exit_group:      mips_syscall_exit_group(mips, memory, a0, a1, a2, a3);      break; \
+    case __NR_set_tid_address: mips_syscall_tid_addr(mips, memory, a0, a1, a2, a3);        break; \
+    case __NR_set_thread_area: mips_syscall_set_thread_area(mips, memory, a0, a1, a2, a3); break; \
+    default:                                                                                      \
+        fprintf(stderr, "Unhandled Syscall: %d\n", v0);                                           \
+        assert(0 && "unknown syscall");                                                           \
     }
 #define ITP_BRK_IMPL     (void) imm20; \
     mips->halted = 1;

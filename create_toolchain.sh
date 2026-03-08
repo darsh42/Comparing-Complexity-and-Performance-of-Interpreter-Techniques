@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
 
-# -- create build tools directory
-mkdir -p build-tools
-
-# -- download mipsel-linux-musl-cross compiler
-if [ ! -f ./build-tools/mipsel-linux-musl-cross.tgz ]; then
-    wget -P ./build-tools https://musl.cc/mipsel-linux-musl-cross.tgz
+# -- download musl-cross-make
+if [ ! -d ./musl-cross-make ]; then
+    git clone https://github.com/richfelker/musl-cross-make.git
 fi
 
-# -- untar the compiler
-if [ ! -d ./build-tools/bin ]; then
-    tar -xzf ./build-tools/mipsel-linux-musl-cross.tgz \
-        -C ./build-tools                               \
-        --strip-components=1
+if [ ! -f ./musl-cross-make/config.mak ]; then
+    cp ./toolchain_config.mak ./musl-cross-make/config.mak
 fi
 
-# -- add build-tools directory to PATH
-export PATH="./build-tools/bin:$PATH"
+cd musl-cross-make
+make -j4
+make install

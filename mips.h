@@ -1,6 +1,8 @@
 #ifndef __MIPS_H__
 #define __MIPS_H__
 
+#include "syscall.h.in"
+
 #define __REGS           \
     X(MIPS_R_ZERO,     0, "%zr")\
     X(MIPS_R_AT,       1, "%at")\
@@ -78,6 +80,9 @@ struct mips {
 
     u32 load_d, load_v, branch_v;
     enum branch_delay   branch_s;
+
+    u32 tidptr;
+    u32 user_local_ptr;
 
     bool branched, halted;
 };
