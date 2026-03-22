@@ -97,6 +97,7 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SH_IMPL,  sh)
 ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWL_IMPL, swl)
 ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  sw)
 ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
+ITP_INSN(ITP_TYPE_RDHWR, ITP_FORMAT_RDHWR, ITP_RDHWR_IMPL, rdhwr)
 
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
@@ -175,6 +176,7 @@ static block_t *decode_block(struct mips   *mips,
         [LWR_OP]     = &&do_lwr,     [SB_OP]     = &&do_sb,
         [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
         [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
+        [RDHWR_OP]   = &&do_rdhwr,
     };
     static const void *secondary[] = {
         [SLL_FN]     = &&do_sll,     [SRL_FN]    = &&do_srl,
@@ -283,6 +285,7 @@ do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
         LABEL(swl,           interpret_swl);
         LABEL(sw,            interpret_sw);
         LABEL(swr,           interpret_swr);
+        LABEL(rdhwr,         interpret_rdhwr);
     }
 
 complete:

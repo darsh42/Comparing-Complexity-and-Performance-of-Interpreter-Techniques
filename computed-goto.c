@@ -84,6 +84,7 @@ void interpreter_computed_goto(struct mips *mips, struct memory *memory) {
         [LWR_OP]     = &&do_lwr,     [SB_OP]     = &&do_sb,
         [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
         [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
+        [RDHWR_OP]   = &&do_rdhwr,
     };
     void *secondary_opcode_labels[] = {
         [SLL_FN]     = &&do_sll,     [SRL_FN]    = &&do_srl,
@@ -191,6 +192,7 @@ do_branch:
     LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWL_IMPL, swl)
     LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  sw)
     LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
+    LABEL(ITP_TYPE_RDHWR, ITP_FORMAT_RDHWR, ITP_RDHWR_IMPL, rdhwr)
 }
 
 #ifndef __MACRO_EXPANSION__

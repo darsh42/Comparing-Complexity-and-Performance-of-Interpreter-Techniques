@@ -142,6 +142,12 @@
                                                register_names[rt],  \
                                                imm16,               \
                                                register_names[rs]);
+#define ITP_FORMAT_RDHWR(name)                                      \
+    printf("  %x:\t%08x\t%s %s, %d\n", mips->r[MIPS_R_PC],          \
+                                       mips->r[MIPS_R_CIR],         \
+                                       name,                        \
+                                       register_names[rt],          \
+                                       rd);
 
 /*****************************************************
  *                 instruction types                 *
@@ -273,6 +279,12 @@
     imm16 = (mips->r[MIPS_R_CIR] >> IMM16_SHIFT) & IMM16_MASK;     \
     value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
     ITP_LOAD_DELAY
+#define ITP_TYPE_RDHWR                                             \
+    enum MIPS_REG rt, rd;                                          \
+    rt = (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK;              \
+    rd = (mips->r[MIPS_R_CIR] >> RD_SHIFT) & RD_MASK;              \
+    ITP_LOAD_DELAY
+
 
 /* instruction implementations */
 #define ITP_SLL_IMPL mips->r[rd] =             value_rt  << sh;
@@ -539,6 +551,24 @@
 #define ITP_SWL_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
 #define ITP_SWR_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
 
+#define ITP_RDHWR_IMPL                             \
+    switch (rd) {                                  \
+    case 0: /* CPUNum */                           \
+        mips->r[rt] = 0;                           \
+        break;                                     \
+    case 2: /* CC (Cycle Counter) */               \
+        mips->r[rt] = 0;                           \
+        break;                                     \
+    case 3: /* CCRes (Cycle Counter Resolution) */ \
+        mips->r[rt] = 1;                           \
+        break;                                     \
+    case 29: /* UserLocal (TLS Pointer) */         \
+        mips->r[rt] = mips->user_local_ptr;        \
+        break;                                     \
+    default:                                       \
+        mips->r[rt] = 0;                           \
+        break;                                     \
+    }
 
 // only really used in a theaded interpreter
 

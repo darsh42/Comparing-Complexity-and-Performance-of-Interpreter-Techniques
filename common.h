@@ -131,4 +131,6 @@ typedef  uint8_t  u8;
 #define SYSCALL_FN 0xC
 #define BRK_FN 0xD
 
+#define RDHWR_OP 0x1f
+
 #endif // __COMMON_H__
