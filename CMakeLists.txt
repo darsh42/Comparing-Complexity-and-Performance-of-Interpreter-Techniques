@@ -4,15 +4,10 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build Type" FORCE)
 endif()
 
-project(gb
+project(dissertation
     VERSION 1.0
     DESCRIPTION "Architectural Limits of Interpreters"
     LANGUAGES C)
-
-find_program(CLANG clang REQUIRED)
-find_program(OPT opt REQUIRED)
-find_program(DOT dot REQUIRED)
-
 
 find_package(Threads REQUIRED)
 
