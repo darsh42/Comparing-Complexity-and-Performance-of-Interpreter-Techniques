@@ -99,4 +99,11 @@ static const char *syscall_names[] = {
 #undef  X
 };
 
+static void print_mips_registers(struct mips *mips) {
+    printf("mips-register contents\n");
+    for (u32 r = 0; r < MIPS_R_REG_MAX; r++) {
+        printf("%s: 0x%08x\n", register_names[r], mips->r[r]);
+    }
+}
+
 #endif // __MIPS_H__
