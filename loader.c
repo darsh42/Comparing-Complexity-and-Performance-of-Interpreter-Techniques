@@ -145,8 +145,9 @@ void loader_load_gp(struct mips *mips, struct memory *memory, FILE *elf,
             const char *symbol_name = 
                 &strings[symbols[s].st_name];
             
-            /* check if it is __gnu_local_gp */
-            if ((loaded_gp = !strcmp(symbol_name, "_gp"))) {
+            /* check if it is _gp or __gnu_local_gp */
+            if ((loaded_gp = !strcmp(symbol_name, "_gp") || 
+                             !strcmp(symbol_name, "__gnu_local_gp"))) {
                 /* assign the correct gp start value */
                 mips->r[MIPS_R_GP] = 
                     symbols[s].st_value;
@@ -160,7 +161,7 @@ void loader_load_gp(struct mips *mips, struct memory *memory, FILE *elf,
     }
 
     assert(loaded_gp &&
-        "__gnu_local_gp not found!");
+        "_gp or __gnu_local_gp not found!");
 }
 void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf, 
                     Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Shdr *shdr) {
@@ -204,6 +205,9 @@ void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf,
     /* write argc */
     mips->r[MIPS_R_SP] -= 4;
     memory_write(memory, mips->r[MIPS_R_SP], 0, 4);
+
+    /* align SP */
+    mips->r[MIPS_R_SP] &= ~0x7;
 }
 
 void loader_elf(struct mips   *mips, 
@@ -239,6 +243,10 @@ void loader_elf(struct mips   *mips,
 
     loader_load_sp(
         mips, memory, elf, ehdr, phdr, shdr);
+
+    for (u32 s = 0; s < memory->segments_count; s++) {
+        print_segment(memory, s);
+    }
     
     fclose(elf);
     free(shdr);
