@@ -101,10 +101,10 @@ void memory_read(struct memory *memory, u32 address, u32 *data, u32 size) {
     /* depending on endianness store value - oppertunities to optimise */
     u32 _data = 0;
     switch (size) {
-    case 4: _data |= *(segment->segment + address + 3) << 24;
-            _data |= *(segment->segment + address + 2) << 16;
-    case 2: _data |= *(segment->segment + address + 1) <<  8;
-    case 1: _data |= *(segment->segment + address + 0) <<  0;
+    case 4: _data |= (u32) (u8) *(segment->segment + address + 3) << 24;
+            _data |= (u32) (u8) *(segment->segment + address + 2) << 16;
+    case 2: _data |= (u32) (u8) *(segment->segment + address + 1) <<  8;
+    case 1: _data |= (u32) (u8) *(segment->segment + address + 0) <<  0;
     } *data = _data;
 }
 
@@ -122,10 +122,10 @@ void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
 
     /* depending on endianness store value */
     switch (size) {
-    case 4: *(segment->segment + address + 3) = (uint8_t) (data >> 24);
-            *(segment->segment + address + 2) = (uint8_t) (data >> 16); 
-    case 2: *(segment->segment + address + 1) = (uint8_t) (data >>  8);
-    case 1: *(segment->segment + address + 0) = (uint8_t) (data >>  0);
+    case 4: *(segment->segment + address + 3) = (u8) (data >> 24);
+            *(segment->segment + address + 2) = (u8) (data >> 16); 
+    case 2: *(segment->segment + address + 1) = (u8) (data >>  8);
+    case 1: *(segment->segment + address + 0) = (u8) (data >>  0);
     }
 }
 

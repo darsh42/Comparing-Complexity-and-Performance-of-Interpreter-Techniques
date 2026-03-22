@@ -14,7 +14,7 @@ typedef  uint8_t  u8;
 #define USER_TOP  0x80000000
 
 #define STACK_PERM 255
-#define STACK_SIZE 0x1000
+#define STACK_SIZE 0x10000
 #define STACK_TOP USER_TOP
 #define STACK_BOT STACK_TOP - STACK_SIZE
 
