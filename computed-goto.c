@@ -12,14 +12,8 @@
     {                                                           \
         type                                                    \
         impl                                                    \
+        mips->r[MIPS_R_PC] += 4;                                \
         DISPATCH;                                               \
-    }
-#define LABEL_HALT(type, formatter, impl, name)                 \
-    do_ ## name:                                                \
-    {                                                           \
-        type                                                    \
-        impl                                                    \
-        return;                                                 \
     }
 #else  // __DISASSEMBLE__
 #define LABEL(type, formatter, impl, name)                      \
@@ -27,20 +21,14 @@
     {                                                           \
         type                                                    \
         impl                                                    \
+        mips->r[MIPS_R_PC] += 4;                                \
         formatter(#name)                                        \
         DISPATCH;                                               \
-    }
-#define LABEL_HALT(type, formatter, impl, name)                 \
-    do_ ## name:                                                \
-    {                                                           \
-        type                                                    \
-        impl                                                    \
-        formatter(#name)                                        \
-        return;                                                 \
     }
 #endif // __DISASSEMBLE__
 
 #define DISPATCH                                                \
+    if (mips->halted) { return; }                               \
     /* handle branch delays */                                  \
     switch (mips->branch_s) {                                   \
     case DELAY:                                                 \
@@ -57,9 +45,6 @@
     /* read the next opcode */                                  \
     memory_read(memory, mips->r[MIPS_R_PC],                     \
                 &mips->r[MIPS_R_CIR], 4);                       \
-                                                                \
-    /* increment program counter */                             \
-    mips->r[MIPS_R_PC] += 4;                                    \
                                                                 \
     /* goto the next label */                                   \
     goto *primary_opcode_labels[                                \
@@ -117,7 +102,7 @@ do_branch:
     goto *branch_opcode_labels[
         (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];
 
-    LABEL_HALT(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
+    LABEL(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
 
     /* create each instruction and label */
     LABEL(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
@@ -218,7 +203,7 @@ int main(int argc, char **argv) {
     /* clean up */
     delete_memory(&memory);
 
-    return 0;
+    return mips.status;
 }
 #endif // __COMPUTED_GOTO_MAIN__
 #endif // __MACRO_EXPANSION__

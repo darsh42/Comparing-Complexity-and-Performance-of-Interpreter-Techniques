@@ -81,6 +81,7 @@ struct mips {
     u32 load_d, load_v, branch_v;
     enum branch_delay   branch_s;
 
+    u32 status;
     u32 tidptr;
     u32 user_local_ptr;
 

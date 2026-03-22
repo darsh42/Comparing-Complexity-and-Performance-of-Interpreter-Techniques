@@ -103,6 +103,9 @@ ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
 ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
 
 #define DISPATCH                                  \
+    if (mips->halted) {                           \
+        goto complete;                            \
+    }                                             \
     if (i < remaining) {                          \
         goto *primary[                            \
             (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
@@ -135,11 +138,6 @@ ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
         finished = 1;                             \
         DARRAY_PUSH(ops, &function);              \
         DISPATCH
-
-#define LABEL_HALT(name, function)                \
-    do_ ## name:                                  \
-        DARRAY_PUSH(ops, &function);              \
-        goto complete
 
 typedef struct {
     u32 cir;
@@ -222,9 +220,6 @@ static block_t *decode_block(struct mips   *mips,
 do_secondary: goto *secondary[(prefetch[i] >> FN_SHIFT) & FN_MASK];
 do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
 
-        /*============= halting instructions ==============*/
-        LABEL_HALT(brk,      interpret_brk);
-
         /*========== branching instructions ===========*/
         LABEL_BRANCH(jr,     interpret_jr);
         LABEL_BRANCH(jalr,   interpret_jalr);
@@ -241,6 +236,7 @@ do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
 
         /*============ basic instructions =============*/
         LABEL(syscall,       interpret_syscall);
+        LABEL(brk,           interpret_brk);
         LABEL(sll,           interpret_sll);
         LABEL(srl,           interpret_srl);
         LABEL(sra,           interpret_sra);
@@ -318,9 +314,9 @@ void interpreter_blocked(struct mips   *mips,
 
         for (u32 s = 0; s < blk->size; s++) {
             op_t o = blk->ops[s];
-            mips->r[MIPS_R_PC] += 4;
             mips->r[MIPS_R_CIR] = o.cir;
             o.op(mips, memory);
+            mips->r[MIPS_R_PC] += 4;
         }
 
         if (mips->halted)

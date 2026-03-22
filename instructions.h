@@ -42,73 +42,73 @@
  *****************************************************/
 #define ITP_FORMAT_NONE(name)
 #define ITP_FORMAT_SHIFT_IMM(name)                                  \
-    printf("  %x:\t%08x\t%s %s, %s, 0x%02x\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s, 0x%02x\n", mips->r[MIPS_R_PC],  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rd],  \
                                                register_names[rt],  \
                                                sh);
 #define ITP_FORMAT_SHIFT_REG(name)                              \
-    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_JR(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rs]);
 #define ITP_FORMAT_JALR(name)              \
-    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
                                         mips->r[MIPS_R_CIR], \
                                         name,                \
                                         register_names[rd],  \
                                         register_names[rs]);
 #define ITP_FORMAT_MF(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rd]);
 #define ITP_FORMAT_MT(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rs]);
 #define ITP_FORMAT_SYSCALL(name)                            \
-    printf("  %x:\t%08x\t%s imm20\n",  mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s imm20\n",  mips->r[MIPS_R_PC],  \
                                        mips->r[MIPS_R_CIR], \
                                        name);
 
 #define ITP_FORMAT_MULT_DIV(name)          \
-    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
                                         mips->r[MIPS_R_CIR], \
                                         name,                \
                                         register_names[rs],  \
                                         register_names[rt]);
 #define ITP_FORMAT_ALU_REG(name)               \
-    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_BRANCH_GENERIC(name)                               \
-    printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
                                                  mips->r[MIPS_R_CIR], \
                                                  name,                \
                                                  register_names[rs],  \
                                                  imm16,               \
                                                  mips->branch_v);
 #define ITP_FORMAT_J_JAL(name)                              \
-    printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC],  \
                                                 mips->r[MIPS_R_CIR], \
                                                 name,                \
                                                 imm26,               \
                                                 mips->branch_v);
 #define ITP_FORMAT_BRANCH_EQ_NE(name)           \
-    printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
                                                      mips->r[MIPS_R_CIR], \
                                                      name,                \
                                                      register_names[rs],  \
@@ -116,27 +116,27 @@
                                                      imm16,               \
                                                      mips->branch_v);
 #define ITP_FORMAT_ALU_IMM(name)            \
-    printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
                                             mips->r[MIPS_R_CIR], \
                                             name,                \
                                             register_names[rt],  \
                                             register_names[rs],  \
                                             imm16);
 #define ITP_FORMAT_LUI_IMM(name)               \
-    printf("  %x:\t%08x\t%s %s, 0x%04x\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x\n", mips->r[MIPS_R_PC],  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rt],  \
                                            imm16);
 #define ITP_FORMAT_LOAD_IMM(name)                  \
-    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rt],  \
                                                imm16,               \
                                                register_names[rs]);
 #define ITP_FORMAT_STORE_IMM(name)                 \
-    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC]-4,  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rt],  \
@@ -302,17 +302,20 @@
 
 #define ITP_JALR_IMPL                     \
     mips->branched = true;                \
-    mips->r[rd] = mips->r[MIPS_R_PC] + 4; \
+    mips->r[rd] = mips->r[MIPS_R_PC] + 8; \
     mips->branch_v = value_rs;            \
     mips->branch_s = DELAY;
 
 #define ITP_SYSCALL_IMPL                                                                          \
     switch (v0) {                                                                                 \
+    case __NR_exit:            mips_syscall_exit(mips, memory, a0, a1, a2, a3);            break; \
     case __NR_read:            mips_syscall_read (mips, memory, a0, a1, a2, a3);           break; \
     case __NR_write:           mips_syscall_write(mips, memory, a0, a1, a2, a3);           break; \
     case __NR_open:            mips_syscall_open (mips, memory, a0, a1, a2, a3);           break; \
     case __NR_close:           mips_syscall_close(mips, memory, a0, a1, a2, a3);           break; \
     case __NR_lseek:           mips_syscall_lseek(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_ioctl:           mips_syscall_ioctl(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_writev:          mips_syscall_writev(mips, memory, a0, a1, a2, a3);          break; \
     case __NR_exit_group:      mips_syscall_exit_group(mips, memory, a0, a1, a2, a3);      break; \
     case __NR_set_tid_address: mips_syscall_tid_addr(mips, memory, a0, a1, a2, a3);        break; \
     case __NR_set_thread_area: mips_syscall_set_thread_area(mips, memory, a0, a1, a2, a3); break; \
@@ -389,17 +392,17 @@
 #define ITP_XOR_IMPL  mips->r[rd] = value_rs ^ value_rt;
 #define ITP_NOR_IMPL  mips->r[rd] = ~(value_rs | value_rt);
 
-#define BRANCH                                                      \
-    mips->branched = true;                                          \
-    mips->branch_v = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2); \
+#define BRANCH                                                         \
+    mips->branched = true;                                             \
+    mips->branch_v = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2) + 4; \
     mips->branch_s = DELAY;
 
 #define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH }
 #define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH }
 #define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH }
 #define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH }
-#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs <  0) { BRANCH }
-#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4; if ((s32) value_rs >= 0) { BRANCH }
+#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs <  0) { BRANCH }
+#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs >= 0) { BRANCH }
 
 #define ITP_J_IMPL                                                     \
     mips->branched = true;                                             \
@@ -407,7 +410,7 @@
     mips->branch_s = DELAY;
 #define ITP_JAL_IMPL                                                   \
     mips->branched = true;                                             \
-    mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 4;                       \
+    mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8;                       \
     mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
     mips->branch_s = DELAY;
 

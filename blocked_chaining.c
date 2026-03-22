@@ -11,8 +11,8 @@
     static void interpret_##name(struct mips *mips,     \
                           struct memory *memory) {      \
         type                                            \
-        formatter(#name)                                \
         impl                                            \
+        formatter(#name)                                \
     }
 #else // __DISASSEMBLE__
 #define ITP_INSN(type, formatter, impl, name)          \
@@ -345,9 +345,9 @@ void interpreter_blocked_chaining(struct mips   *mips,
 
         for (u32 i = 0; i < curr_blk->size; i++) {
             op_t o = curr_blk->ops[i];
-            mips->r[MIPS_R_PC] += 4;
             mips->r[MIPS_R_CIR] = o.cir;
             o.op(mips, memory);
+            mips->r[MIPS_R_PC] += 4;
         }
 
         // stop the interpreter if halted
@@ -365,7 +365,7 @@ void interpreter_blocked_chaining(struct mips   *mips,
         curr_blk = (mips->branched) ?
             prev_blk->jump: prev_blk->cont;
 
-#ifdef DISASSEMBLE_ENABLE
+#ifdef __DISASSEMBLE_
         printf("\n");
 #endif
     }
