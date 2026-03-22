@@ -6,6 +6,22 @@
 
 #include "instructions.h"
 
+#ifndef   __DISASSEMBLE__
+#define LABEL(type, formatter, impl, name)                      \
+    do_ ## name:                                                \
+    {                                                           \
+        type                                                    \
+        impl                                                    \
+        DISPATCH;                                               \
+    }
+#define LABEL_HALT(type, formatter, impl, name)                 \
+    do_ ## name:                                                \
+    {                                                           \
+        type                                                    \
+        impl                                                    \
+        return;                                                 \
+    }
+#else  // __DISASSEMBLE__
 #define LABEL(type, formatter, impl, name)                      \
     do_ ## name:                                                \
     {                                                           \
@@ -22,6 +38,8 @@
         formatter(#name)                                        \
         return;                                                 \
     }
+#endif // __DISASSEMBLE__
+
 #define DISPATCH                                                \
     /* handle branch delays */                                  \
     switch (mips->branch_s) {                                   \

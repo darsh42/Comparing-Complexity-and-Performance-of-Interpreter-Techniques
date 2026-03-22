@@ -6,6 +6,23 @@
 #include "loader.h"
 #include "instructions.h"
 
+#ifdef __DISASSEMBLE__
+#define ITP_INSN(type, formatter, impl, name)           \
+    static void interpret_##name(struct mips *mips,     \
+                          struct memory *memory) {      \
+        type                                            \
+        formatter(#name)                                \
+        impl                                            \
+    }
+#else // __DISASSEMBLE__
+#define ITP_INSN(type, formatter, impl, name)          \
+    static void interpret_##name(struct mips *mips,    \
+                          struct memory *memory) {     \
+        type                                           \
+        impl                                           \
+    }
+#endif // __DISASSEMBLE__
+
 /* instruction generation */
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRL_IMPL, srl)
@@ -369,8 +386,8 @@ int main(int argc, char **argv) {
     }
 
     /* create emulator resources */
-    struct mips   mips   = {};
-    struct memory memory = {};
+    struct mips   mips   = {0};
+    struct memory memory = {0};
 
     /* handle any explicit object creation */
     create_memory(&memory);

@@ -3,7 +3,7 @@
 
 #include "syscalls.h"
 
-#define DISASSEMBLE_ENABLE
+#define __DISASSEMBLE__
 // #define  LOAD_DELAY_ENABLE
 
 /*****************************************************
@@ -32,23 +32,6 @@
 #define ITP_LOAD_DELAY
 #endif // LOAD_DELAY_ENABLE
 
-#ifdef DISASSEMBLE_ENABLE
-#define ITP_INSN(type, formatter, impl, name)           \
-    static void interpret_##name(struct mips *mips,     \
-                          struct memory *memory) {      \
-        type                                            \
-        formatter(#name)                                \
-        impl                                            \
-    }
-#else
-#define ITP_INSN(type, formatter, impl, name)          \
-    static void interpret_##name(struct mips *mips,    \
-                          struct memory *memory) {     \
-        type                                           \
-        impl                                           \
-    }
-#endif
-
 /*****************************************************
  *            instruction formatters                 *
  *****************************************************
@@ -59,73 +42,73 @@
  *****************************************************/
 #define ITP_FORMAT_NONE(name)
 #define ITP_FORMAT_SHIFT_IMM(name)                                  \
-    printf("  %x:\t%08x\t%s %s, %s, 0x%02x\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s, 0x%02x\n", mips->r[MIPS_R_PC]-4,  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rd],  \
                                                register_names[rt],  \
                                                sh);
 #define ITP_FORMAT_SHIFT_REG(name)                              \
-    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC]-4,  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_JR(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rs]);
 #define ITP_FORMAT_JALR(name)              \
-    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC]-4,  \
                                         mips->r[MIPS_R_CIR], \
                                         name,                \
                                         register_names[rd],  \
                                         register_names[rs]);
 #define ITP_FORMAT_MF(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rd]);
 #define ITP_FORMAT_MT(name)                             \
-    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC]-4,  \
                                    mips->r[MIPS_R_CIR], \
                                    name,                \
                                    register_names[rs]);
 #define ITP_FORMAT_SYSCALL(name)                            \
-    printf("  %x:\t%08x\t%s imm20\n",  mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s imm20\n",  mips->r[MIPS_R_PC]-4,  \
                                        mips->r[MIPS_R_CIR], \
                                        name);
 
 #define ITP_FORMAT_MULT_DIV(name)          \
-    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC]-4,  \
                                         mips->r[MIPS_R_CIR], \
                                         name,                \
                                         register_names[rs],  \
                                         register_names[rt]);
 #define ITP_FORMAT_ALU_REG(name)               \
-    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC]-4,  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
-#define ITP_FORMAT_BRANCH_GENERIC(name)                      \
-    printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
+#define ITP_FORMAT_BRANCH_GENERIC(name)                               \
+    printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
                                                  mips->r[MIPS_R_CIR], \
                                                  name,                \
                                                  register_names[rs],  \
                                                  imm16,               \
                                                  mips->branch_v);
 #define ITP_FORMAT_J_JAL(name)                              \
-    printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
                                                 mips->r[MIPS_R_CIR], \
                                                 name,                \
                                                 imm26,               \
                                                 mips->branch_v);
 #define ITP_FORMAT_BRANCH_EQ_NE(name)           \
-    printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC]-4,  \
                                                      mips->r[MIPS_R_CIR], \
                                                      name,                \
                                                      register_names[rs],  \
@@ -133,27 +116,27 @@
                                                      imm16,               \
                                                      mips->branch_v);
 #define ITP_FORMAT_ALU_IMM(name)            \
-    printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC]-4,  \
                                             mips->r[MIPS_R_CIR], \
                                             name,                \
                                             register_names[rt],  \
                                             register_names[rs],  \
                                             imm16);
 #define ITP_FORMAT_LUI_IMM(name)               \
-    printf("  %x:\t%08x\t%s %s, 0x%04x\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x\n", mips->r[MIPS_R_PC]-4,  \
                                            mips->r[MIPS_R_CIR], \
                                            name,                \
                                            register_names[rt],  \
                                            imm16);
 #define ITP_FORMAT_LOAD_IMM(name)                  \
-    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC]-4,  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rt],  \
                                                imm16,               \
                                                register_names[rs]);
 #define ITP_FORMAT_STORE_IMM(name)                 \
-    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
+    printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC]-4,  \
                                                mips->r[MIPS_R_CIR], \
                                                name,                \
                                                register_names[rt],  \

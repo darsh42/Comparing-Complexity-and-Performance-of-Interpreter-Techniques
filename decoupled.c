@@ -64,6 +64,23 @@
 #include "idecode.h"
 #include "instructions.h"
 
+#ifdef __DISASSEMBLE__
+#define ITP_INSN(type, formatter, impl, name)           \
+    static void interpret_##name(struct mips *mips,     \
+                          struct memory *memory) {      \
+        type                                            \
+        formatter(#name)                                \
+        impl                                            \
+    }
+#else // __DISASSEMBLE__
+#define ITP_INSN(type, formatter, impl, name)          \
+    static void interpret_##name(struct mips *mips,    \
+                          struct memory *memory) {     \
+        type                                           \
+        impl                                           \
+    }
+#endif // __DISASSEMBLE__
+
 /* instruction generation */
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
 ITP_INSN(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRL_IMPL, srl)
