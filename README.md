@@ -17,23 +17,12 @@ Clone source
 https://github.com/darsh42/dissertation
 cd dissertation
 ```
-
-download and setup supported compilers and tools
-```bash
-./create_toolchain.sh
-```
-
-compile interpreters
+compile interpreters, sample programs and toolchain
 ```bash
 cmake -S . -B build
 make -C build
 ```
 
-compile examples
-```bash
-cmake -S samples -B build-samples
-make -C build-samples
-```
 
 ## Usage
 Currently there are three binaries compiled with the default build command.

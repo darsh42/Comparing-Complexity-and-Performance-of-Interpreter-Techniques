@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
+include(ExternalProject)
+
 project(mips-binary
     VERSION 1.0
-    DESCRIPTION "bare metal mips binary"
+    DESCRIPTION "sample mips binaries"
     LANGUAGES C)
-
-## set the correct mips c compiler
-set(CMAKE_C_COMPILER ../build-tools/bin/mipsel-linux-muslsf-gcc)
 
 ## libraries
 add_library(compile-flags INTERFACE)
@@ -28,7 +27,18 @@ target_link_options(compile-flags
     INTERFACE
     -static)
 
-## executables
+ExternalProject_Add(npb_benchmarks
+    URL https://www.nas.nasa.gov/assets/npb/NPB3.4.4.tar.gz
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/NPB-src"
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy 
+                      ${CMAKE_CURRENT_SOURCE_DIR}/npb_make.def 
+                      <SOURCE_DIR>/NPB3.4-OMP/config/make.def
+    BUILD_COMMAND make -C <SOURCE_DIR>/NPB3.4-OMP IS CLASS=S
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/bin
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    <SOURCE_DIR>/NPB3.4-OMP/bin/
+                    ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
 add_executable(binary_search ${CMAKE_CURRENT_SOURCE_DIR}/binary_search.c)
 add_executable(crc           ${CMAKE_CURRENT_SOURCE_DIR}/crc.c)
 add_executable(daxpy         ${CMAKE_CURRENT_SOURCE_DIR}/daxpy.c)

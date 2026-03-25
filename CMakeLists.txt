@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build Type" FORCE)
-endif()
+include(ExternalProject)
 
 project(dissertation
     VERSION 1.0
@@ -11,10 +9,34 @@ project(dissertation
 
 find_package(Threads REQUIRED)
 
+############################# TOOLCHAIN ##################################
+ExternalProject_Add(toolchain
+    GIT_REPOSITORY    https://github.com/richfelker/musl-cross-make.git
+    GIT_TAG           master
+    SOURCE_DIR        "${CMAKE_BINARY_DIR}/musl-cross-make"
+
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy
+                      ${CMAKE_CURRENT_SOURCE_DIR}/toolchain_config.mak
+                      <SOURCE_DIR>/config.mak
+
+    BUILD_COMMAND     make -j4
+    INSTALL_COMMAND   make install
+
+    BUILD_IN_SOURCE   1)
+
+############################# SAMPLES ##################################
+ExternalProject_Add(samples
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/samples"
+    BINARY_DIR "${CMAKE_BINARY_DIR}/samples"
+    CMAKE_ARGS 
+        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/samples.toolchain.cmake
+    DEPENDS toolchain)
+
+############################# COMPILE FLAGS ##################################
 add_library(release-flags INTERFACE)
 target_compile_options(release-flags
     INTERFACE
-    -O3
+    -O0
     -Wall
     -Wextra
     -Wfloat-equal
@@ -22,15 +44,15 @@ target_compile_options(release-flags
     -Wshadow
     -Wpointer-arith
     -Wcast-align
-    -Wstrict-prototypes
     -Wstrict-overflow
     -Wno-unused-variable
     -Wno-unused-parameter
+    -fno-omit-frame-pointer
     -march=native)
 add_library(debug-flags INTERFACE)
 target_compile_options(debug-flags
     INTERFACE
-    -g
+    -Os
     -Wall
     -Wextra
     -Wfloat-equal
@@ -41,12 +63,13 @@ target_compile_options(debug-flags
     -Wstrict-overflow
     -Wno-unused-variable
     -Wno-unused-parameter
-    -fsanitize=address
+    # -fsanitize=address
     -fno-omit-frame-pointer
     -march=native)
 target_link_options(debug-flags
     INTERFACE
-    -fsanitize=address)
+    #-fsanitize=address)
+)
 
 #### core
 add_library(supporting
@@ -125,6 +148,11 @@ add_executable(expanded_blocked
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c)
 add_executable(expanded_blocked_chaining
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c)
+
+target_compile_options(computed-goto
+    PRIVATE
+    -fno-gcse
+    -fno-crossjumping)
 
 target_compile_definitions(switch
     PRIVATE
