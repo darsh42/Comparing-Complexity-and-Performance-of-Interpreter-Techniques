@@ -244,9 +244,11 @@ void loader_elf(struct mips   *mips,
     loader_load_sp(
         mips, memory, elf, ehdr, phdr, shdr);
 
+#ifdef __DISASSEMBLY__
     for (u32 s = 0; s < memory->segments_count; s++) {
         print_segment(memory, s);
     }
+#endif // __DISASSEMBLY__
     
     fclose(elf);
     free(shdr);

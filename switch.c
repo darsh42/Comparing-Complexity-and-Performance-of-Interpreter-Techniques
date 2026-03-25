@@ -25,45 +25,46 @@
 
 #ifdef __DISASSEMBLE__
 #define CASE(type, formatter, impl, value, name)  \
-        case value: {                       \
-            type                            \
-            impl                            \
-            formatter(#name)                \
-            continue;                       \
+        case value: {                             \
+            type                                  \
+            impl                                  \
+            formatter(#name)                      \
+            break;                                \
         }
 #else // __DISASSEMBLE__
 #define CASE(type, formatter, impl, value, name)  \
-        case value: {                       \
-            type                            \
-            impl                            \
-            continue;                       \
+        case value: {                             \
+            type                                  \
+            impl                                  \
+            break;                                \
         }
 #endif // __DISASSEMBLE__
 
 /* instruction generation */
 void interpreter_switch(struct mips *mips, struct memory *memory) {
-    for (; !mips->halted; mips->r[MIPS_R_PC] += 4) {
-        /* handle branch delays */
-        switch (mips->branch_s) {
-        case DELAY:     
-            mips->branch_s = TRANSFER; 
-            break;
-        case TRANSFER:  
-            mips->branch_s = UNUSED;
-            mips->r[MIPS_R_PC] = mips->branch_v;
-            break;
-        }
+    for (; !mips->halted; ) {
 
         /* read the next opcode */
         memory_read(memory, mips->r[MIPS_R_PC], 
                     &mips->r[MIPS_R_CIR], 4);
 
-        /* process opcode */
-        switch((mips->r[MIPS_R_CIR] >> OP_SHIFT) & 
-                                       OP_MASK) {
-        case 0x0: goto secondary_op;
-        case 0x1: goto    branch_op;
+        /* the below switch statement might seem a slight bit confusing
+         * essentially there are 3 categories of instructions, primary,
+         * secondary and branch categories.
+         *
+         * The value of the primary category specifies if it is a secondary
+         * or branch category instruction.
+         *
+         * As such cases 0x0 and 0x1 in primary category correspond to seconday
+         * and branch categories respectively
+         * */
 
+        /* process opcode */
+        switch((mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK) {
+        default:
+            assert(0 && "Unknown primary instruction");
+
+        /*  PRIMARY INSTRUCTION BLOCK */
         CASE(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLEZ_IMPL, BLEZ_OP, blez)
         CASE(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BGTZ_IMPL, BGTZ_OP, bgtz)
         CASE(ITP_TYPE_J_JAL, ITP_FORMAT_J_JAL, ITP_J_IMPL, J_OP, j)
@@ -91,12 +92,10 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
         CASE(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  SW_OP, sw)
         CASE(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, SWR_OP, swr)
         CASE(ITP_TYPE_RDHWR, ITP_FORMAT_RDHWR, ITP_RDHWR_IMPL, RDHWR_OP, rdhwr)
-        default:
-            assert(0 && "Unknown primary instruction");
-        }
-secondary_op:
-        switch((mips->r[MIPS_R_CIR] >> FN_SHIFT) & 
-                                       FN_MASK) {
+    
+        /* SECONDARY INSTRUCTION BLOCK */
+        case 0x0:
+        switch((mips->r[MIPS_R_CIR] >> FN_SHIFT) & FN_MASK) {
         CASE(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, BRK_FN, brk)
         CASE(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, SLL_FN, sll)
         CASE(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRL_IMPL, SRL_FN, srl)
@@ -128,9 +127,11 @@ secondary_op:
         default:
             assert(0 && "Unknown secondary instruction");
         }
-branch_op:
-        switch((mips->r[MIPS_R_CIR] >> RT_SHIFT) & 
-                                       RT_MASK) {
+        break;
+
+        /*  BRANCH INSTRUCTION BLOCK */
+        case 0x1:
+        switch((mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK) {
         CASE(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLTZ_IMPL, BLTZ_RT, bltz)
         CASE(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BGEZ_IMPL, BGEZ_RT, bgez)
         CASE(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLTZAL_IMPL, BLTZAL_RT, bltzal)
@@ -138,6 +139,10 @@ branch_op:
         default:
             assert(0 && "Unknown branch instruction");
         }
+        break;
+        }
+
+        INCREMENT_PC;
     }
 }
 

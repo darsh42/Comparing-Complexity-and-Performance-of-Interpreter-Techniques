@@ -3,9 +3,6 @@
 
 #include "syscalls.h"
 
-#define __DISASSEMBLE__
-// #define  LOAD_DELAY_ENABLE
-
 /*****************************************************
  *               instruction builder                 *
  *****************************************************
@@ -23,14 +20,14 @@
  *  - easier to read the instruction implementations *
  *    as they are separated from the boiler plate    *
  *****************************************************/
-#ifdef LOAD_DELAY_ENABLE
+#ifdef __LOAD_DELAY__
 #define ITP_LOAD_DELAY                             \
         mips->r[mips->load_d]= mips->load_v;       \
         mips->r[MIPS_R_ZERO] = 0;                  \
         mips->load_d         = MIPS_R_GARBAGE;      
-#else  // LOAD_DELAY_ENABLE
+#else  // __LOAD_DELAY__
 #define ITP_LOAD_DELAY
-#endif // LOAD_DELAY_ENABLE
+#endif // __LOAD_DELAY__
 
 /*****************************************************
  *            instruction formatters                 *
@@ -100,13 +97,13 @@
                                                  name,                \
                                                  register_names[rs],  \
                                                  imm16,               \
-                                                 mips->branch_v);
+                                                 mips->r[MIPS_R_NNPC]);
 #define ITP_FORMAT_J_JAL(name)                              \
     printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC],  \
                                                 mips->r[MIPS_R_CIR], \
                                                 name,                \
                                                 imm26,               \
-                                                mips->branch_v);
+                                                mips->r[MIPS_R_NNPC]);
 #define ITP_FORMAT_BRANCH_EQ_NE(name)           \
     printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
                                                      mips->r[MIPS_R_CIR], \
@@ -114,7 +111,7 @@
                                                      register_names[rs],  \
                                                      register_names[rt],  \
                                                      imm16,               \
-                                                     mips->branch_v);
+                                                     mips->r[MIPS_R_NNPC]);
 #define ITP_FORMAT_ALU_IMM(name)            \
     printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
                                             mips->r[MIPS_R_CIR], \
@@ -295,16 +292,14 @@
 #define ITP_SRLV_IMPL mips->r[rd] =            value_rt  >> (value_rs & 0x1f);
 #define ITP_SRAV_IMPL mips->r[rd] = (u32)((s32)value_rt >> (value_rs & 0x1f));
 
-#define ITP_JR_IMPL            \
-    mips->branched = true;     \
-    mips->branch_v = value_rs; \
-    mips->branch_s = DELAY;
+#define ITP_JR_IMPL                  \
+    mips->branched       = true;     \
+    mips->r[MIPS_R_NNPC] = value_rs;
 
 #define ITP_JALR_IMPL                     \
     mips->branched = true;                \
     mips->r[rd] = mips->r[MIPS_R_PC] + 8; \
-    mips->branch_v = value_rs;            \
-    mips->branch_s = DELAY;
+    mips->r[MIPS_R_NNPC] = value_rs;
 
 #define ITP_SYSCALL_IMPL                                                                          \
     switch (v0) {                                                                                 \
@@ -392,10 +387,9 @@
 #define ITP_XOR_IMPL  mips->r[rd] = value_rs ^ value_rt;
 #define ITP_NOR_IMPL  mips->r[rd] = ~(value_rs | value_rt);
 
-#define BRANCH                                                         \
-    mips->branched = true;                                             \
-    mips->branch_v = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2) + 4; \
-    mips->branch_s = DELAY;
+#define BRANCH                                                                \
+    mips->branched       = true;                                              \
+    mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2) + 4;
 
 #define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH }
 #define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH }
@@ -404,15 +398,14 @@
 #define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs <  0) { BRANCH }
 #define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs >= 0) { BRANCH }
 
-#define ITP_J_IMPL                                                     \
-    mips->branched = true;                                             \
-    mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
-    mips->branch_s = DELAY;
-#define ITP_JAL_IMPL                                                   \
-    mips->branched = true;                                             \
-    mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8;                       \
-    mips->branch_v = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2); \
-    mips->branch_s = DELAY;
+#define ITP_J_IMPL                                                          \
+    mips->branched = true;                                                  \
+    mips->r[MIPS_R_NNPC] = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2);
+
+#define ITP_JAL_IMPL                                                        \
+    mips->branched = true;                                                  \
+    mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8;                            \
+    mips->r[MIPS_R_NNPC] = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2);
 
 #define ITP_BEQ_IMPL if (value_rs == value_rt) { BRANCH }
 #define ITP_BNE_IMPL if (value_rs != value_rt) { BRANCH }
@@ -542,13 +535,6 @@
 #define ITP_SB_IMPL  memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 1);
 #define ITP_SH_IMPL  memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 2);
 #define ITP_SW_IMPL  memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
-
-#define ITP_BRANCH_DELAY_IMPL            \
-    mips->r[MIPS_R_PC] = mips->branch_v; \
-    mips->branch_s     = UNUSED;
-
-#define ITP_HALT_IMPL \
-    mips->halted = true; 
 
 /* TODO: */
 #define ITP_SWL_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);

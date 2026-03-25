@@ -39,9 +39,16 @@
     X(MIPS_R_HI,      32, "%hi")\
     X(MIPS_R_LO,      33, "%lo")\
     X(MIPS_R_PC,      34, "%pc")\
-    X(MIPS_R_CIR,     35, "%cir")\
-    X(MIPS_R_GARBAGE, 36, "")\
-    X(MIPS_R_REG_MAX, 37, "")\
+    X(MIPS_R_NPC,     35, "%npc")\
+    X(MIPS_R_NNPC,    36, "%nnpc")\
+    X(MIPS_R_CIR,     37, "%cir")\
+    X(MIPS_R_GARBAGE, 38, "")\
+    X(MIPS_R_REG_MAX, 39, "")\
+
+#define INCREMENT_PC                                        \
+    mips->r[MIPS_R_PC]   = mips->r[MIPS_R_NPC];             \
+    mips->r[MIPS_R_NPC]  = mips->r[MIPS_R_NNPC];            \
+    mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_NNPC]+4;
 
 #define __MIPS_SYSCALL_NR 4000
 #define __SYSCALLS \
@@ -52,7 +59,6 @@
     X(MIPS_SYSCALL_LSEEK,        19 + __MIPS_SYSCALL_NR, "syscall_lseek") \
     X(MIPS_SYSCALL_EXIT_GROUP,  210 + __MIPS_SYSCALL_NR, "syscall_exit_group") \
     X(MIPS_SYSCALL_TID_ADDR,    283 + __MIPS_SYSCALL_NR, "syscall_tid_addr")
-
 
 enum MIPS_SECTION {
     OLD_BLOCK = 0,
@@ -78,8 +84,9 @@ enum branch_delay {
 struct mips {
     u32 r[MIPS_R_REG_MAX];
 
-    u32 load_d, load_v, branch_v;
-    enum branch_delay   branch_s;
+#ifdef LOAD_DELAY_ENABLE
+    u32 load_d, load_v;
+#endif
 
     u32 status;
     u32 tidptr;
