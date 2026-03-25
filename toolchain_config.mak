@@ -22,7 +22,7 @@ TARGET = mipsel-linux-muslsf
 
 # OUTPUT = /opt/cross
 # OUTPUT = /usr/local
-OUTPUT = ${CURDIR}/../build-tools
+OUTPUT = ${CURDIR}/../tools
 
 # By default, latest supported release versions of musl and the toolchain
 # components are used. You can override those here, but the version selected

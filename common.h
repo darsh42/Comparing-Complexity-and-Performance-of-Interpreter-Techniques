@@ -1,6 +1,9 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+// #define __DISASSEMBLE__
+// #define  LOAD_DELAY_ENABLE
+
 #ifndef __MACRO_EXPANSION__
 #include <stdio.h>
 #include <stdint.h>

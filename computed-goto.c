@@ -12,7 +12,7 @@
     {                                                           \
         type                                                    \
         impl                                                    \
-        mips->r[MIPS_R_PC] += 4;                                \
+        INCREMENT_PC;                                           \
         DISPATCH;                                               \
     }
 #else  // __DISASSEMBLE__
@@ -21,30 +21,20 @@
     {                                                           \
         type                                                    \
         impl                                                    \
-        mips->r[MIPS_R_PC] += 4;                                \
+        INCREMENT_PC;                                           \
         formatter(#name)                                        \
         DISPATCH;                                               \
     }
 #endif // __DISASSEMBLE__
 
 #define DISPATCH                                                \
-    if (mips->halted) { return; }                               \
-    /* handle branch delays */                                  \
-    switch (mips->branch_s) {                                   \
-    case DELAY:                                                 \
-        mips->branch_s = TRANSFER;                              \
-        break;                                                  \
-    case TRANSFER:                                              \
-        mips->branch_s = UNUSED;                                \
-        mips->r[MIPS_R_PC] = mips->branch_v;                    \
-        break;                                                  \
-    default:                                                    \
-        break;                                                  \
-    }                                                           \
+    if (mips->halted)                                           \
+        return;                                                 \
                                                                 \
     /* read the next opcode */                                  \
-    memory_read(memory, mips->r[MIPS_R_PC],                     \
-                &mips->r[MIPS_R_CIR], 4);                       \
+    memory_read(                                                \
+        memory, mips->r[MIPS_R_PC],                             \
+        &mips->r[MIPS_R_CIR], 4);                               \
                                                                 \
     /* goto the next label */                                   \
     goto *primary_opcode_labels[                                \

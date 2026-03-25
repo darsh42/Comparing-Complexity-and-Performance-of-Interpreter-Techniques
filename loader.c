@@ -119,7 +119,9 @@ void loader_load_segments(struct memory *memory, FILE *elf,
 void loader_load_pc(struct mips *mips, struct memory *memory, FILE *elf, 
                     Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Shdr *shdr) {
     /* set the entry point */
-    mips->r[MIPS_R_PC] = ehdr->e_entry;
+    mips->r[MIPS_R_PC]   = ehdr->e_entry;
+    mips->r[MIPS_R_NPC]  = mips->r[MIPS_R_PC] + 4;
+    mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_PC] + 8;
 }
 void loader_load_gp(struct mips *mips, struct memory *memory, FILE *elf, 
                     Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Shdr *shdr) {
@@ -244,9 +246,11 @@ void loader_elf(struct mips   *mips,
     loader_load_sp(
         mips, memory, elf, ehdr, phdr, shdr);
 
+#ifdef __DISASSEMBLY__
     for (u32 s = 0; s < memory->segments_count; s++) {
         print_segment(memory, s);
     }
+#endif // __DISASSEMBLY__
     
     fclose(elf);
     free(shdr);
