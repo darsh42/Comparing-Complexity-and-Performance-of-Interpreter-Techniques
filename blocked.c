@@ -99,18 +99,11 @@ ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  sw)
 ITP_INSN(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
 ITP_INSN(ITP_TYPE_RDHWR, ITP_FORMAT_RDHWR, ITP_RDHWR_IMPL, rdhwr)
 
-ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_BRANCH_DELAY_IMPL, branch_delay)
-ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
-
 #define DISPATCH                                  \
-    if (mips->halted) {                           \
-        goto complete;                            \
-    }                                             \
-    if (i < remaining) {                          \
-        goto *primary[                            \
-            (prefetch[i] >> OP_SHIFT) & OP_MASK]; \
-    }                                             \
-    continue
+    memory_read(memory, pc, &cir, 4);             \
+    pc += 4;                                      \
+    goto *primary[                                \
+        (cir >> OP_SHIFT) & OP_MASK];
 
 #define DARRAY_PUSH(ops, function)                \
     do {                                          \
@@ -120,23 +113,22 @@ ITP_INSN(ITP_TYPE_NONE, ITP_FORMAT_NONE, ITP_HALT_IMPL, halt)
                 ops, sizeof(*ops) * capacity);    \
         }                                         \
         ops[size++] = (op_t) {                    \
-            .cir = prefetch[i], .op = function    \
+            .cir = cir, .op = function            \
         };                                        \
-        i++;                                      \
     } while(0)
 
 #define LABEL(name, function)                     \
     do_ ## name:                                  \
         DARRAY_PUSH(ops, &function);              \
-        if (!finished) {                          \
+        if (!branched && !mips->halted) {         \
             DISPATCH;                             \
         }                                         \
         goto complete
 
 #define LABEL_BRANCH(name, function)              \
     do_ ## name:                                  \
-        finished = 1;                             \
         DARRAY_PUSH(ops, &function);              \
+        branched = 1;                             \
         DISPATCH
 
 typedef struct {
@@ -199,26 +191,23 @@ static block_t *decode_block(struct mips   *mips,
 
     // create block variable 
     block_t *blk = NULL;
-
-    u32 prefetch[64] = {0}, finished = 0, pc = mips->r[MIPS_R_PC];
+    
+    // branched flag
+    u32 branched = 0;
+    
+    // processor registers 
+    u32 pc = mips->r[MIPS_R_PC], cir = 0;
 
     // ops dynamic array values;
     u32  size = 0, capacity = 32;
     op_t *ops = malloc(sizeof(*ops) * capacity);
 
     for (;;) {
-        u32 i = 0;
-
-        u32 remaining = memory_read_chunk(memory, 
-            pc, prefetch, 64*sizeof(u32))/sizeof(u32);
-
-        pc += remaining;
-
         /* start dispatch chain */
         DISPATCH;
         
-do_secondary: goto *secondary[(prefetch[i] >> FN_SHIFT) & FN_MASK];
-do_branch:    goto    *branch[(prefetch[i] >> RT_SHIFT) & RT_MASK];
+do_secondary: goto *secondary[(cir >> FN_SHIFT) & FN_MASK];
+do_branch:    goto    *branch[(cir >> RT_SHIFT) & RT_MASK];
 
         /*========== branching instructions ===========*/
         LABEL_BRANCH(jr,     interpret_jr);
@@ -299,7 +288,7 @@ void interpreter_blocked(struct mips   *mips,
                          struct memory *memory) {
     block_t *blocks = NULL;
 
-    for (;;) {
+    for (; !mips->halted ;) {
         block_t *blk = NULL;
  
         HASH_FIND(hh, blocks, 
@@ -316,13 +305,8 @@ void interpreter_blocked(struct mips   *mips,
             op_t o = blk->ops[s];
             mips->r[MIPS_R_CIR] = o.cir;
             o.op(mips, memory);
-            mips->r[MIPS_R_PC] += 4;
+            INCREMENT_PC;
         }
-
-        if (mips->halted)
-            break;
-
-        mips->r[MIPS_R_PC] = mips->branch_v;
     }
 
     block_t *b, *t;
