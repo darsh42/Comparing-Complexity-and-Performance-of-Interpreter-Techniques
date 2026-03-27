@@ -6,27 +6,6 @@
 
 #include "instructions.h"
 
-#ifndef   __DISASSEMBLE__
-#define LABEL(type, formatter, impl, name)                      \
-    do_ ## name:                                                \
-    {                                                           \
-        type                                                    \
-        impl                                                    \
-        INCREMENT_PC;                                           \
-        DISPATCH;                                               \
-    }
-#else  // __DISASSEMBLE__
-#define LABEL(type, formatter, impl, name)                      \
-    do_ ## name:                                                \
-    {                                                           \
-        type                                                    \
-        impl                                                    \
-        INCREMENT_PC;                                           \
-        formatter(#name)                                        \
-        DISPATCH;                                               \
-    }
-#endif // __DISASSEMBLE__
-
 #define DISPATCH                                                \
     if (mips->halted)                                           \
         return;                                                 \
@@ -92,82 +71,31 @@ do_branch:
     goto *branch_opcode_labels[
         (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];
 
-    LABEL(ITP_TYPE_BRK, ITP_FORMAT_SYSCALL, ITP_BRK_IMPL, brk)
+#ifndef   __DISASSEMBLE__
+#define X(type, formatter, impl, opcode, name)                  \
+    do_ ## name:                                                \
+    {                                                           \
+        type                                                    \
+        impl                                                    \
+        INCREMENT_PC;                                           \
+        DISPATCH;                                               \
+    }
+#else  // __DISASSEMBLE__
+#define X(type, formatter, impl, opcode, name)                  \
+    do_ ## name:                                                \
+    {                                                           \
+        type                                                    \
+        impl                                                    \
+        INCREMENT_PC;                                           \
+        formatter(#name)                                        \
+        DISPATCH;                                               \
+    }
+#endif // __DISASSEMBLE__
 
-    /* create each instruction and label */
-    LABEL(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SLL_IMPL, sll)
-    LABEL(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRL_IMPL, srl)
-    LABEL(ITP_TYPE_SHIFT_IMM, ITP_FORMAT_SHIFT_IMM, ITP_SRA_IMPL, sra)
+    __INSTRUCTIONS
 
-    LABEL(ITP_TYPE_SHIFT_REG, ITP_FORMAT_SHIFT_REG, ITP_SLLV_IMPL, sllv)
-    LABEL(ITP_TYPE_SHIFT_REG, ITP_FORMAT_SHIFT_REG, ITP_SRLV_IMPL, srlv)
-    LABEL(ITP_TYPE_SHIFT_REG, ITP_FORMAT_SHIFT_REG, ITP_SRAV_IMPL, srav)
+#undef X
 
-    LABEL(ITP_TYPE_JR, ITP_FORMAT_JR, ITP_JR_IMPL, jr)
-
-    LABEL(ITP_TYPE_JALR, ITP_FORMAT_JALR, ITP_JALR_IMPL, jalr)
-
-    LABEL(ITP_TYPE_SYSCALL, ITP_FORMAT_SYSCALL, ITP_SYSCALL_IMPL, syscall)
-
-    LABEL(ITP_TYPE_MF, ITP_FORMAT_MF, ITP_MFHI_IMPL, mfhi)
-    LABEL(ITP_TYPE_MF, ITP_FORMAT_MF, ITP_MFLO_IMPL, mflo)
-
-    LABEL(ITP_TYPE_MT, ITP_FORMAT_MT, ITP_MTHI_IMPL, mthi)
-    LABEL(ITP_TYPE_MT, ITP_FORMAT_MT, ITP_MTLO_IMPL, mtlo)
-
-    LABEL(ITP_TYPE_MULT_DIV, ITP_FORMAT_MULT_DIV, ITP_MULT_IMPL,  mult)
-    LABEL(ITP_TYPE_MULT_DIV, ITP_FORMAT_MULT_DIV, ITP_MULTU_IMPL, multu)
-    LABEL(ITP_TYPE_MULT_DIV, ITP_FORMAT_MULT_DIV, ITP_DIV_IMPL,  div)
-    LABEL(ITP_TYPE_MULT_DIV, ITP_FORMAT_MULT_DIV, ITP_DIVU_IMPL, divu)
-
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_ADD_IMPL,  add)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_ADDU_IMPL, addu)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_SUB_IMPL,  sub)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_SUBU_IMPL, subu)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_SLT_IMPL,  slt)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_SLTU_IMPL, sltu)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_AND_IMPL,  and)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_OR_IMPL,   or)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_XOR_IMPL,  xor)
-    LABEL(ITP_TYPE_ALU_REG, ITP_FORMAT_ALU_REG, ITP_NOR_IMPL,  nor)
-
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLTZ_IMPL, bltz)
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BGEZ_IMPL, bgez)
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLEZ_IMPL, blez)
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BGTZ_IMPL, bgtz)
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BLTZAL_IMPL, bltzal)
-    LABEL(ITP_TYPE_BRANCH_GENERIC, ITP_FORMAT_BRANCH_GENERIC, ITP_BGEZAL_IMPL, bgezal)
-
-    LABEL(ITP_TYPE_J_JAL, ITP_FORMAT_J_JAL, ITP_J_IMPL, j)
-    LABEL(ITP_TYPE_J_JAL, ITP_FORMAT_J_JAL, ITP_JAL_IMPL, jal)
-
-    LABEL(ITP_TYPE_BRANCH_EQ_NE, ITP_FORMAT_BRANCH_EQ_NE, ITP_BEQ_IMPL, beq)
-    LABEL(ITP_TYPE_BRANCH_EQ_NE, ITP_FORMAT_BRANCH_EQ_NE, ITP_BNE_IMPL, bne)
-
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_ADDI_IMPL,  addi)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_ADDIU_IMPL, addiu)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_SLTI_IMPL,  slti)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_SLTIU_IMPL, sltiu)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_ANDI_IMPL,  andi)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_ORI_IMPL,   ori)
-    LABEL(ITP_TYPE_ALU_IMM, ITP_FORMAT_ALU_IMM, ITP_XORI_IMPL,  xori)
-
-    LABEL(ITP_TYPE_LUI_IMM, ITP_FORMAT_LUI_IMM, ITP_LUI_IMPL, lui)
-
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LB_IMPL,  lb)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LH_IMPL,  lh)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LWL_IMPL, lwl)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LW_IMPL,  lw)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LBU_IMPL, lbu)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LHU_IMPL, lhu)
-    LABEL(ITP_TYPE_LOAD_IMM, ITP_FORMAT_LOAD_IMM, ITP_LWR_IMPL, lwr)
-
-    LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SB_IMPL,  sb)
-    LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SH_IMPL,  sh)
-    LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWL_IMPL, swl)
-    LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SW_IMPL,  sw)
-    LABEL(ITP_TYPE_STORE_IMM, ITP_FORMAT_STORE_IMM, ITP_SWR_IMPL, swr)
-    LABEL(ITP_TYPE_RDHWR, ITP_FORMAT_RDHWR, ITP_RDHWR_IMPL, rdhwr)
 }
 
 #ifndef __MACRO_EXPANSION__
