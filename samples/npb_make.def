@@ -29,7 +29,7 @@
 #---------------------------------------------------------------------------
 # This is the fortran compiler used for Fortran programs
 #---------------------------------------------------------------------------
-FC = ./../../../../build-tools/bin/mipsel-linux-muslsf-gfortran
+FC = ./../../../../tools/bin/mipsel-linux-muslsf-gfortran
 # This links fortran programs; usually the same as ${FC}
 FLINK	= $(FC)
 
@@ -75,7 +75,7 @@ FLINKFLAGS = $(FFLAGS)
 #---------------------------------------------------------------------------
 # This is the C compiler used for C programs
 #---------------------------------------------------------------------------
-CC = ./../../../../build-tools/bin/mipsel-linux-muslsf-gcc
+CC = ./../../../../tools/bin/mipsel-linux-muslsf-gcc
 # This links C programs; usually the same as ${CC}
 CLINK	= $(CC)
 
