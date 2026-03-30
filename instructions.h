@@ -311,6 +311,10 @@
     case __NR_lseek:           mips_syscall_lseek(mips, memory, a0, a1, a2, a3);           break; \
     case __NR_ioctl:           mips_syscall_ioctl(mips, memory, a0, a1, a2, a3);           break; \
     case __NR_writev:          mips_syscall_writev(mips, memory, a0, a1, a2, a3);          break; \
+    case __NR_brk:             mips_syscall_brk(mips, memory, a0, a1, a2, a3);             break; \
+    case __NR_mmap2:           mips_syscall_mmap2(mips, memory, a0, a1, a2, a3);           break; \
+    case __NR_mprotect:        mips_syscall_mprotect(mips, memory, a0, a1, a2, a3);        break; \
+    case __NR_clock_gettime64: mips_syscall_clock_gettime64(mips, memory, a0, a1, a2, a3); break; \
     case __NR_exit_group:      mips_syscall_exit_group(mips, memory, a0, a1, a2, a3);      break; \
     case __NR_set_tid_address: mips_syscall_tid_addr(mips, memory, a0, a1, a2, a3);        break; \
     case __NR_set_thread_area: mips_syscall_set_thread_area(mips, memory, a0, a1, a2, a3); break; \
@@ -319,7 +323,7 @@
         assert(0 && "unknown syscall");                                                           \
     }
 #define ITP_BRK_IMPL     (void) imm20; \
-    mips->halted = 1;
+    assert(0 && "illegal instruction brk");
 
 #define ITP_MFHI_IMPL mips->r[rd] = mips->r[MIPS_R_HI];
 #define ITP_MFLO_IMPL mips->r[rd] = mips->r[MIPS_R_LO];
@@ -419,9 +423,9 @@
     } else {                     \
         mips->r[rt] = r;         \
     }
-#define ITP_ADDIU_IMPL mips->r[rt] = value_rs + (s32) (s16) imm16;
-#define ITP_SLTI_IMPL  mips->r[rt] = ((s32) value_rs < (s32) (s16) imm16);
-#define ITP_SLTIU_IMPL mips->r[rt] = value_rs < (u32) (s32) (s16) imm16;
+#define ITP_ADDIU_IMPL mips->r[rt] =        value_rs +       (s32) (s16) imm16;
+#define ITP_SLTI_IMPL  mips->r[rt] = ((s32) value_rs <       (s32) (s16) imm16);
+#define ITP_SLTIU_IMPL mips->r[rt] = ((u32) value_rs < (u32) (s32) (s16) imm16);
 #define ITP_ANDI_IMPL  mips->r[rt] = value_rs & imm16;
 #define ITP_ORI_IMPL   mips->r[rt] = value_rs | imm16;
 #define ITP_XORI_IMPL  mips->r[rt] = value_rs ^ imm16;
@@ -512,22 +516,28 @@
     u32 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read(memory, address, &read, 1);      \
-    mips->r[rt] = read;
+    mips->r[rt] = read & 0xff;
 #define ITP_LHU_IMPL                             \
     u32 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read(memory, address, &read, 2);      \
     mips->r[rt] = read;
-#define ITP_LWL_IMPL /* TODO: */                  \
-    u32 read = 0;                                 \
-    u32 address = LOAD_COMPUTE_ADDRESS;           \
-    memory_read(memory, address & ~0x3, &read, 2);\
-    mips->r[rt] = read;
-#define ITP_LWR_IMPL /* TODO: */                  \
-    u32 read = 0;                                 \
-    u32 address = LOAD_COMPUTE_ADDRESS;           \
-    memory_read(memory, address & ~0x3, &read, 2);\
-    mips->r[rt] = read;
+#define ITP_LWR_IMPL                             \
+    u32 read    = 0;                             \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    u32 shift   = (address & 3) << 3;            \
+    u32 mask    = 0xffffffff >> (shift);         \
+    memory_read(memory, address & ~3, &read, 4); \
+    mips->r[rt] = (mips->r[rt] & ~mask) |        \
+                  (read >> (shift));
+#define ITP_LWL_IMPL                             \
+    u32 read    = 0;                             \
+    u32 address = LOAD_COMPUTE_ADDRESS;          \
+    u32 shift   = (address & 3) << 3;            \
+    u32 mask    = 0xffffffff << (24 - shift);    \
+    memory_read(memory, address & ~3, &read, 4); \
+    mips->r[rt] = (mips->r[rt] & ~mask) |        \
+                  (read << (24-shift));
 #endif // LOAD_DELAY_ENABLE
 
 #define STORE_COMPUTE_ADDRESS ((s32) (s16) imm16) + value_rs
@@ -558,6 +568,14 @@
         mips->r[rt] = 0;                           \
         break;                                     \
     }
+
+// instructions for libc musl compatibility
+#define ITP_SPECIAL_IMPL
+#define ITP_LL_IMPL       \
+    ITP_LW_IMPL
+#define ITP_SC_IMPL       \
+    ITP_SW_IMPL           \
+    mips->r[rt] = 1;      \
 
 // only really used in a theaded interpreter
 

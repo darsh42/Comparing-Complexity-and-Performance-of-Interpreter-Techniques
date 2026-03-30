@@ -82,38 +82,64 @@ void loader_load_symbols(FILE *elf,
 void loader_load_segments(struct memory *memory, FILE *elf, 
                           Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs) {
     for (size_t h = 0; h < ehdr->e_phnum; h++) {
-        /* if the header is PT_LOAD load into memory */
-        if ((phdrs + h)->p_type != PT_LOAD) {
+        Elf32_Phdr phdr = phdrs[h];
+
+        if (phdr.p_type != PT_LOAD) {
             continue;
         }
 
-        /* define the heap start */
-        if (((phdrs+h)->p_vaddr + (phdrs+h)->p_memsz) > memory->heap_start) {
-            memory->heap_start = ALIGN(((phdrs+h)->p_vaddr + (phdrs+h)->p_memsz), 0x1000);
-            memory->heap_end   = memory->heap_start;
-        }
-        
-        /* create the load segment setting lower, upper, perm, and size */
-        struct segment *segment = create_segment(memory, (phdrs+h)->p_vaddr, 
-                                                         (phdrs+h)->p_vaddr + (phdrs+h)->p_memsz - 1,
-                                                         (phdrs+h)->p_flags,
-                                                         (phdrs+h)->p_memsz);
-        
-        /* seek to the start of the segment in the elf */
-        assert(fseek(elf, (phdrs + h)->p_offset, SEEK_SET) == 0 &&
-                "Couldn't seek to elf segment");
-
-        /* read contents of elf into segment */
-        assert((fread(segment->segment, 1, (phdrs+h)->p_filesz, elf) == (phdrs+h)->p_filesz) &&
-                "Couldn't read all bytes from elf segment");
-
-        /* if the file size is smaller than memory size then remaining is bss and needs to be cleared*/
-        if ((phdrs+h)->p_memsz > (phdrs+h)->p_filesz) {
-            memset(segment->segment + (phdrs+h)->p_filesz, 
-                0, (phdrs+h)->p_memsz - (phdrs+h)->p_filesz);
+        // check if address lower than heap
+        if (phdr.p_vaddr + phdr.p_memsz > 
+                memory->brk_heap_start) {
+            memory->brk_heap_start = 
+                phdr.p_vaddr + phdr.p_memsz;
+            memory->brk_heap_end   = 
+                phdr.p_vaddr + phdr.p_memsz;
         }
 
+        // allocate guest memory
+        memory_allocate(memory, phdr.p_vaddr, 
+                                phdr.p_memsz);
+        
+        // seek to segment
+        u32 rseek  = 
+            fseek(elf, phdr.p_offset, SEEK_SET);
+
+        if (rseek) {
+            fprintf(stderr, "Couldn't seek to elf segment");
+            goto err;
+        }
+        
+        // allocate buffer for file contents.
+        char *buffer = malloc((phdrs+h)->p_memsz);
+
+        if (!buffer) {
+            fprintf(stderr, "Couldn't seek to elf segment");
+            goto err;
+        }
+
+        // read contents of elf into buffer 
+        u32 rread = 
+            fread(buffer, 1, phdr.p_filesz, elf);
+
+        if (rread != phdr.p_filesz) {
+            fprintf(stderr, "Couldn't read all bytes from elf segment");
+            goto err;
+        }
+
+        // transfer all bytes from buffer to guest
+        memory_copy_write(memory, phdr.p_vaddr, 
+                          phdr.p_memsz, buffer);
+
+        // clear remaining bytes
+        if (phdr.p_memsz > phdr.p_filesz) {
+            memory_set(memory, phdr.p_vaddr+phdr.p_filesz, 
+                               phdr.p_memsz-phdr.p_filesz, 0);
+        }
     }
+    return;
+err:
+    assert(0);
 }
 
 void loader_load_pc(struct mips *mips, struct memory *memory, FILE *elf, 
@@ -169,13 +195,12 @@ void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf,
                     Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Shdr *shdr) {
 
     /* allocate stack space */
-    struct segment *stack = create_segment(memory, STACK_TOP - STACK_SIZE,
-                                                   STACK_TOP,
-                                                   STACK_PERM,
-                                                   STACK_SIZE);
+    memory_allocate(memory, STACK_BOT,
+                            STACK_SIZE);
 
     /* clear the stack */
-    memset(stack->segment, 0, stack->upper - stack->lower);
+    memory_set(memory, STACK_BOT, 
+                       STACK_SIZE, 0);
 
     /* set stack top*/
     mips->r[MIPS_R_SP] = STACK_TOP;
@@ -245,12 +270,6 @@ void loader_elf(struct mips   *mips,
 
     loader_load_sp(
         mips, memory, elf, ehdr, phdr, shdr);
-
-#ifdef __DISASSEMBLY__
-    for (u32 s = 0; s < memory->segments_count; s++) {
-        print_segment(memory, s);
-    }
-#endif // __DISASSEMBLY__
     
     fclose(elf);
     free(shdr);

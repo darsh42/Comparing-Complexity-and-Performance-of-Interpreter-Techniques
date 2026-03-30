@@ -25,12 +25,15 @@
     X(ITP_TYPE_LOAD_IMM,       ITP_FORMAT_LOAD_IMM,       ITP_LBU_IMPL,     LBU_OP,     lbu)     \
     X(ITP_TYPE_LOAD_IMM,       ITP_FORMAT_LOAD_IMM,       ITP_LHU_IMPL,     LHU_OP,     lhu)     \
     X(ITP_TYPE_LOAD_IMM,       ITP_FORMAT_LOAD_IMM,       ITP_LWR_IMPL,     LWR_OP,     lwr)     \
+    X(ITP_TYPE_LOAD_IMM,       ITP_FORMAT_LOAD_IMM,       ITP_LL_IMPL,      LL_OP,      ll)      \
     X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SB_IMPL,      SB_OP,      sb)      \
     X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SH_IMPL,      SH_OP,      sh)      \
     X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SWL_IMPL,     SWL_OP,     swl)     \
     X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SW_IMPL,      SW_OP,      sw)      \
+    X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SC_IMPL,      SC_OP,      sc)      \
     X(ITP_TYPE_STORE_IMM,      ITP_FORMAT_STORE_IMM,      ITP_SWR_IMPL,     SWR_OP,     swr)     \
     X(ITP_TYPE_RDHWR,          ITP_FORMAT_RDHWR,          ITP_RDHWR_IMPL,   RDHWR_OP,   rdhwr)
+
 #define __INSTRUCTIONS_SECONDARY                                                                 \
     X(ITP_TYPE_BRK,            ITP_FORMAT_SYSCALL,        ITP_BRK_IMPL,     BRK_FN,     brk)     \
     X(ITP_TYPE_SHIFT_IMM,      ITP_FORMAT_SHIFT_IMM,      ITP_SLL_IMPL,     SLL_FN,     sll)     \
@@ -42,6 +45,7 @@
     X(ITP_TYPE_JR,             ITP_FORMAT_JR,             ITP_JR_IMPL,      JR_FN,      jr)      \
     X(ITP_TYPE_JALR,           ITP_FORMAT_JALR,           ITP_JALR_IMPL,    JALR_FN,    jalr)    \
     X(ITP_TYPE_SYSCALL,        ITP_FORMAT_SYSCALL,        ITP_SYSCALL_IMPL, SYSCALL_FN, syscall) \
+    X(ITP_TYPE_SYSCALL,        ITP_FORMAT_SYSCALL,        ITP_SPECIAL_IMPL, SPECIAL_FN, special) \
     X(ITP_TYPE_MF,             ITP_FORMAT_MF,             ITP_MFHI_IMPL,    MFHI_FN,    mfhi)    \
     X(ITP_TYPE_MF,             ITP_FORMAT_MF,             ITP_MFLO_IMPL,    MFLO_FN,    mflo)    \
     X(ITP_TYPE_MT,             ITP_FORMAT_MT,             ITP_MTHI_IMPL,    MTHI_FN,    mthi)    \

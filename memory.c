@@ -1,153 +1,261 @@
-#include "common.h"
-#include "log.h"
 #include "memory.h"
 
-#define MEMORY_RAM_FLAGS PF_X | PF_W | PF_R
-#define MEMORY_RAM_SIZE  8192
-#define MEMORY_RAM_BOT   0
-#define MEMORY_RAM_TOP   MEMORY_RAM_BOT + MEMORY_RAM_SIZE - 1
+void memory_read(memory_t *memory, u32 address, void *data, u32 size) {
+    assert(memory && data);
 
-struct segment *create_segment(struct memory *memory, u32 lower, 
-                               u32 upper, u32 permissions, size_t size) {
-    /* allocate the segment */
-    memory->segments_count++;
-    memory->segments = realloc(memory->segments, 
-            sizeof(struct segment) * memory->segments_count);
-    
-    assert(memory->segments);
+    // get table index, entry index and offset
+    u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
+    u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
+    u32 offset = address & OFFSET_MASK;
 
-    /* retrive the segment pointer so it can be populated */
-    struct segment *segment = 
-        &memory->segments[memory->segments_count - 1];
-    
-    /* set segment upper and lower bounds */
-    segment->lower = lower;
-    segment->upper = upper;
+    // find table
+    page_table_t *table = memory->page_tables[pt_idx];
+    assert(table && "[memory_read]: invalid read\n");
 
-    /* set the segment permissions */
-    segment->permissions = permissions;
+    // find entry
+    page_entry_t  entry = table->page_entries[pe_idx];
+    assert(entry && "[memory_read]: invalid read\n");
 
-    /* allocate space for data */
-    segment->segment = calloc(1, size);
+    // check for cross-page read
+    // assert(offset + size <= (1 << PE_SHIFT) && 
+    //     "cross-page read");
 
-    /* return pointer to segment */
-    return segment;
-}
+    // compute source location
+    u8 *source = (u8 *)entry + offset;
 
-void delete_segment(struct memory *memory, size_t index) {
-    assert(index < memory->segments_count);
-    free(memory->segments[index].segment);
-}
-
-void print_segment(struct memory *memory, size_t index) {
-    assert(index < memory->segments_count);
-    printf("[%2zu] lower: %08x, upper: %08x, perm: %d\n", index, 
-            memory->segments[index].lower, memory->segments[index].upper, 
-            memory->segments[index].permissions);
-}
-
-/*******************************************
- * READ/WRITE - Basic methods for reading  *
- *              and writing to the memory  *
- *              of the emulated processor. *
- *                                         *
- *              Each operation checks for  *
- *              memory bounds and maps ad- *
- *              resses based on the virtu- *
- *              al addressing scheme.      *
- *******************************************/
-struct segment *memory_map_address(struct memory *memory, u32 address) {
-    for (size_t s = 0; s < memory->segments_count; s++) {
-        if (address >= memory->segments[s].lower &&
-            address <= memory->segments[s].upper) {
-            return &memory->segments[s];
-        }
-    }
-    return NULL;
-}
-u32 memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size) {
-    /* define segment holder */
-    struct segment *segment = 
-        memory_map_address(memory, address);
-    assert(segment != NULL);
-
-    /* if size is too much, change to maximum */
-    size = (size < segment->upper - address) ? 
-        size: segment->upper - address;
-
-    /* translate address to segment base */
-    address -= segment->lower;
-
-    /* depending on endianness store value - oppertunities to optimise */
-    for (size_t b = 0; b < size; b++) {
-        *(((u8 *)data) + b) = 
-            *(segment->segment + address + b);
-    }
-
-    return size;
-}
-void memory_read(struct memory *memory, u32 address, u32 *data, u32 size) {
-    /* define segment holder */
-    struct segment *segment = 
-        memory_map_address(memory, address);
-    assert(segment != NULL);
-
-    /* translate address to segment base */
-    address -= segment->lower;
-
-    /* check memory index validity */
-    assert(address <= segment->upper);
-
-    /* depending on endianness store value - oppertunities to optimise */
-    u32 _data = 0;
+    // perform read
     switch (size) {
-    case 4: _data |= (u32) (u8) *(segment->segment + address + 3) << 24;
-            _data |= (u32) (u8) *(segment->segment + address + 2) << 16;
-    case 2: _data |= (u32) (u8) *(segment->segment + address + 1) <<  8;
-    case 1: _data |= (u32) (u8) *(segment->segment + address + 0) <<  0;
-    } *data = _data;
+    case 4: *(u32 *)data = *(u32 *)source; return;
+    case 2: *(u16 *)data = *(u16 *)source; return;
+    case 1: *(u8  *)data = *(u8  *)source; return;
+    }
 }
 
 void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
-    /* define segment holder */
-    struct segment *segment = 
-        memory_map_address(memory, address);
-    assert(segment != NULL);
+    assert(memory);
 
-    /* translate address to segment base */
-    address -= segment->lower;
+    // get table index, entry index and offset
+    u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
+    u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
+    u32 offset = address & OFFSET_MASK;
 
-    /* check memory index validity */
-    assert(address <= segment->upper);
+    // find table
+    page_table_t *table = memory->page_tables[pt_idx];
+    assert(table && "[memory_read]: invalid write\n");
 
-    /* depending on endianness store value */
+    // find entry
+    page_entry_t  entry = table->page_entries[pe_idx];
+    assert(entry && "[memory_read]: invalid write\n");
+
+    // check for cross-page read
+    // assert(offset + size <= (1 << PE_SHIFT) && 
+    //     "cross-page read");
+
+    // compute destination location
+    u8 *destination = (u8 *)entry + offset;
+
+    // perform read
     switch (size) {
-    case 4: *(segment->segment + address + 3) = (u8) (data >> 24);
-            *(segment->segment + address + 2) = (u8) (data >> 16); 
-    case 2: *(segment->segment + address + 1) = (u8) (data >>  8);
-    case 1: *(segment->segment + address + 0) = (u8) (data >>  0);
+    case 4: *(u32 *) destination = data; return;
+    case 2: *(u16 *) destination = data; return;
+    case 1: *(u8  *) destination = data; return;
     }
 }
 
-void create_memory(struct memory *memory) {
-    /* ensure memory is empty */
-    assert(memory->segments == NULL);
-    assert(memory->segments_count == 0);
+void memory_allocate(memory_t *memory, u32 address, u32 size) {
+    /*
+     * page boundaries:
+     * |____|____|____|____|____|____|____|____|____|____|
+     *
+     * allocation: H - head, A - aligned, T- tail
+     * |______|HHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT|_______|
+     *
+     * align head and tail
+     * aligned_head = beg_addr >> PAGE_SHIFT;
+     * aligned_tail = end_addr >> PAGE_SHIFT;
+     *
+     * page_count = (aligned_tail - aligned_head) / page_size;
+     */
+    
+    u32 aligned_table_head = ((address + 0)        >> PT_SHIFT) & PT_MASK;
+    u32 aligned_table_tail = ((address + size - 1) >> PT_SHIFT) & PT_MASK;
 
-    /* create RAM */
-    create_segment(memory, MEMORY_RAM_BOT,
-                           MEMORY_RAM_TOP,
-                           MEMORY_RAM_FLAGS,
-                           MEMORY_RAM_SIZE);
-}
+    for (u32 t = aligned_table_head; t <= aligned_table_tail; t++) {
+        // get table index
+        u32 pt_idx = t & PT_MASK;
 
-void delete_memory(struct memory *memory) {
-    /* delete individual segment memories */
-    for (size_t s = 0; s < memory->segments_count; s++) {
-        delete_segment(memory, s);
+        // find table
+        page_table_t *table = memory->page_tables[pt_idx];
+        if (!table) {
+            /* allocate a new table entry */
+            table = calloc(1, sizeof(page_table_t));
+            assert(table && 
+                "failed to allocate table");
+            memory->page_tables[pt_idx] = table;
+        }
+
+        u32 entry_start = 0;
+        u32 entry_end   = PE_MASK;
+
+        // if the entry is in head table 
+        if (t == aligned_table_head) {
+            entry_start = 
+                ((address + 0) >> PE_SHIFT) & PE_MASK;
+        }
+
+        // if the entry is in tail table
+        if (t == aligned_table_tail) {
+            entry_end = 
+                ((address + size - 1) >> PE_SHIFT) & PE_MASK;
+        }
+
+        for (u32 e = entry_start; e <= entry_end; e++) {
+            u32 pe_idx = e & PE_MASK;
+
+            page_entry_t  entry = table->page_entries[pe_idx];
+            if (!entry) {
+                /* allocate a new page entry */
+                entry = calloc(1, 1 << PE_SHIFT);
+                assert(entry && 
+                    "failed to allocate page");
+                table->page_entries[pe_idx] = entry;
+            }
+        }
     }
-
-    /* delete segments arrays */
-    free(memory->segments);
 }
 
+void memory_copy_read(memory_t *memory, u32 address, u32 size, void *buffer) {
+    u8* _buffer = buffer;
+    while (size) {
+        // get table index, entry index and offset
+        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
+        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
+        u32 offset =  address & OFFSET_MASK;
+
+        // find table
+        page_table_t *table = memory->page_tables[pt_idx];
+        if (!table) {
+            // handle error
+            assert(0);
+        }
+
+        // find entry
+        page_entry_t  entry = table->page_entries[pe_idx];
+        if (!entry) {
+            // handle error
+            assert(0);
+        }
+
+        u32 amount = (size < OFFSET_MASK+1 - offset) ?
+            size: OFFSET_MASK+1 - offset;
+
+        memcpy(_buffer, (u8 *)entry+offset, amount);
+
+        address += amount;
+        _buffer += amount;
+        size    -= amount;
+    }
+}
+
+void memory_copy_write(memory_t *memory, u32 address, u32 size, void *buffer) {
+    u8* _buffer = buffer;
+    while (size) {
+        // get table index, entry index and offset
+        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
+        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
+        u32 offset =  address & OFFSET_MASK;
+
+        // find table
+        page_table_t *table = memory->page_tables[pt_idx];
+        if (!table) {
+            // handle error
+            assert(0);
+        }
+
+        // find entry
+        page_entry_t  entry = table->page_entries[pe_idx];
+        if (!entry) {
+            // handle error
+            assert(0);
+        }
+
+        u32 amount = (size < OFFSET_MASK+1 - offset) ?
+            size: OFFSET_MASK+1 - offset;
+
+        memcpy((u8 *)entry+offset, _buffer, amount);
+
+        address += amount;
+        _buffer += amount;
+        size    -= amount;
+    }
+}
+
+void memory_set(memory_t *memory, u32 address, u32 size, u32 value) {
+    while (size) {
+        // get table index, entry index and offset
+        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
+        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
+        u32 offset =  address & OFFSET_MASK;
+
+        // find table
+        page_table_t *table = memory->page_tables[pt_idx];
+        if (!table) {
+            // handle error
+            assert(0);
+        }
+
+        // find entry
+        page_entry_t  entry = table->page_entries[pe_idx];
+        if (!entry) {
+            // handle error
+            assert(0);
+        }
+
+        u32 amount = (size < OFFSET_MASK+1 - offset) ?
+            size: OFFSET_MASK+1 - offset;
+
+        memset((u8 *)entry+offset, value, amount);
+
+        address += amount;
+        size    -= amount;
+    }
+}
+
+void memory_create(memory_t *memory) {
+    assert(memory);
+
+    /* set mmap heap */
+    memory->mmap_heap_start = 0x40000000;
+    memory->mmap_heap_end   = 0x40000000;
+}
+
+void memory_delete(memory_t *memory) {
+    for (u32 t = 0; t < PT_COUNT; t++) {
+        // get page table
+        page_table_t *table = 
+            memory->page_tables[t];
+
+        // skip if un-alloced
+        if (table == NULL) {
+            continue;
+        }
+
+        // free page entries
+        for (u32 e = 0; e < PE_COUNT; e++) {
+            // get page entry
+            page_entry_t entry = 
+                table->page_entries[e];
+
+            // skip if un-alloced
+            if (entry == NULL) {
+                continue;
+            }
+
+            // free entry
+            free(entry);
+        }
+
+        // free table
+        free(table);
+    }
+}

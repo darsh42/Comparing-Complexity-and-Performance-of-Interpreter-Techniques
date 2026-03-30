@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
     struct memory memory = {};
 
     /* handle any explicit object creation */
-    create_memory(&memory);
+    memory_create(&memory);
     
     /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     interpreter_switch(&mips, &memory);
 
     /* clean up */
-    delete_memory(&memory);
+    memory_delete(&memory);
 
     return mips.status;
 }

@@ -1,51 +1,47 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-typedef  int64_t s64;
-typedef  int32_t s32;
-typedef  int16_t s16;
-typedef   int8_t  s8;
-
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef  uint8_t  u8;
+#include "common.h"
 
 #define USER_TOP  0x80000000
-
-#define STACK_PERM 255
 #define STACK_SIZE 0x10000
 #define STACK_TOP USER_TOP
 #define STACK_BOT STACK_TOP - STACK_SIZE
 
-struct segment {
-    /* lowest and highest address */
-    u32 lower, upper;
-    /* read/write/execute permissions */
-    u32 permissions;
-    /* segment address */
-    u8 *segment;
-};
+#define ADDRESS_WIDTH 32
+#define PT_SHIFT 22
+#define PE_SHIFT 12
 
-struct memory {
-    /* heap addresses */
-    u32 heap_start;
-    u32 heap_end;
+#define PT_MASK 0b1111111111
+#define PE_MASK 0b1111111111
 
-    /* memory sections and the address ranges */
-    struct segment *segments;
-    size_t          segments_count;
-};
+#define PT_COUNT 1 << (ADDRESS_WIDTH - PT_SHIFT)
+#define PE_COUNT 1 << (     PT_SHIFT - PE_SHIFT)
 
-struct segment *create_segment(struct memory *memory, u32 lower, 
-                               u32 upper, u32 permissions, size_t size);
-void delete_segment(struct memory *memory, size_t index);
-void  print_segment(struct memory *memory, size_t index);
-struct segment *memory_map_address(struct memory *memory, u32 address);
-void memory_read(struct memory *memory, u32 address, u32 *data, u32 size);
-void memory_write(struct memory *memory, u32 address, u32 data, u32 size);
-u32 memory_read_chunk(struct memory *memory, u32 address, u32 *data, u32 size);
-void create_memory(struct memory *memory);
-void delete_memory(struct memory *memory);
+#define OFFSET_MASK 0b111111111111
+
+typedef void * page_entry_t;
+
+typedef struct page_table {
+    page_entry_t page_entries[PE_COUNT];
+} page_table_t;
+
+typedef struct memory {
+    page_table_t *page_tables[PT_COUNT];
+
+    u32  brk_heap_start,  brk_heap_end;
+    u32 mmap_heap_start, mmap_heap_end;
+}memory_t;
+
+void memory_create(memory_t *memory);
+void memory_delete(memory_t *memory);
+
+void memory_allocate(memory_t *memory, u32 address, u32 size);
+void memory_copy(memory_t *memory, u32 address, u32 size, void *buffer);
+void memory_set(memory_t *memory, u32 address, u32 size, u32 value);
+
+void memory_read (memory_t *memory, u32 address, void *data, u32 size);
+void memory_write(memory_t *memory, u32 address, u32   data, u32 size);
 
 #endif // __MEMORY_H__
+

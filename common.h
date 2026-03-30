@@ -136,4 +136,9 @@ typedef  uint8_t  u8;
 
 #define RDHWR_OP 0x1f
 
+// musl compatibility
+#define SPECIAL_FN 0xf
+#define LL_OP 0x30
+#define SC_OP 0x38
+
 #endif // __COMMON_H__
