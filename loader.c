@@ -191,50 +191,55 @@ void loader_load_gp(struct mips *mips, struct memory *memory, FILE *elf,
     assert(loaded_gp &&
         "_gp or __gnu_local_gp not found!");
 }
+
 void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf, 
                     Elf32_Ehdr *ehdr, Elf32_Phdr *phdr, Elf32_Shdr *shdr) {
+    const char *name = "emulator";
+    u32 random[] = {0xdeadbeef, 0x12345678, 
+                    0x87654321, 0xfacefeed};
 
     /* allocate stack space */
     memory_allocate(memory, STACK_BOT,
-                            STACK_SIZE);
+                            STACK_SIZE+1);
 
     /* clear the stack */
     memory_set(memory, STACK_BOT, 
-                       STACK_SIZE, 0);
+                       STACK_SIZE+1, 0);
 
     /* set stack top*/
     mips->r[MIPS_R_SP] = STACK_TOP;
 
-    /* write aux_v */
+    mips->r[MIPS_R_SP] -= 16;
+    u32 random_ptr = mips->r[MIPS_R_SP];
+    memory_copy_write(memory, random_ptr, 16, random);
+
+    mips->r[MIPS_R_SP] -= 8;
+    u32 name_ptr = mips->r[MIPS_R_SP];
+    memory_copy_write(memory, name_ptr, 8, name);
+
+    mips->r[MIPS_R_SP] &= ~0xF;
+
+    // Define auxv 
     struct { u32 type; u32 value; } auxv[] = {
-        {3,  ehdr->e_entry},            // AT_PHDR (approx, usually needs load addr)
-        {4,  ehdr->e_phentsize},       // AT_PHENT
-        {5,  ehdr->e_phnum},           // AT_PHNUM
-        {6,  4096},                    // AT_PAGESZ
-        {0,  0}                        // AT_NULL (Terminator)
+        {6,  4096},                        // AT_PAGESZ
+        {25, random_ptr},                  // AT_RANDOM
+        {3,  0x400000 + ehdr->e_phoff},    // AT_PHDR
+        {4,  ehdr->e_phentsize},           // AT_PHENT
+        {5,  ehdr->e_phnum},               // AT_PHNUM
+        {31, name_ptr},                    // AT_EXECFN
+        {0,  0}                            // AT_NULL
     };
 
-    for (s32 e = sizeof(auxv)/sizeof(*auxv) - 1; e >= 0; e--) {
-        memory_write(memory, 
-            (mips->r[MIPS_R_SP] -= 4), auxv[e].value, 4);
-        memory_write(memory, 
-            (mips->r[MIPS_R_SP] -= 4), auxv[e].type, 4);
+    int num_aux = sizeof(auxv)/sizeof(auxv[0]);
+    for (int i = num_aux - 1; i >= 0; i--) {
+        memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), auxv[i].value);
+        memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), auxv[i].type);
     }
-    
-    /* write envp */
-    mips->r[MIPS_R_SP] -= 4;
-    memory_write(memory, mips->r[MIPS_R_SP], 0, 4);
 
-    /* write argv */
-    mips->r[MIPS_R_SP] -= 4;
-    memory_write(memory, mips->r[MIPS_R_SP], 0, 4);
-
-    /* write argc */
-    mips->r[MIPS_R_SP] -= 4;
-    memory_write(memory, mips->r[MIPS_R_SP], 0, 4);
-
-    /* align SP */
-    mips->r[MIPS_R_SP] &= ~0x7;
+    memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), 0); // envp[0] NULL terminator
+    memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), 0); // argv[1] NULL terminator
+    memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), name_ptr); // argv[0] program name
+    memory_write_u32(memory, (mips->r[MIPS_R_SP] -= 4), 1); // argc = 1
 }
 
 void loader_elf(struct mips   *mips, 

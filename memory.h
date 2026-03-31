@@ -24,7 +24,7 @@ typedef void * page_entry_t;
 
 typedef struct page_table {
     page_entry_t page_entries[PE_COUNT];
-} page_table_t;
+} __attribute__((alignas(64))) page_table_t;
 
 typedef struct memory {
     page_table_t *page_tables[PT_COUNT];
@@ -37,11 +37,21 @@ void memory_create(memory_t *memory);
 void memory_delete(memory_t *memory);
 
 void memory_allocate(memory_t *memory, u32 address, u32 size);
-void memory_copy(memory_t *memory, u32 address, u32 size, void *buffer);
 void memory_set(memory_t *memory, u32 address, u32 size, u32 value);
 
-void memory_read (memory_t *memory, u32 address, void *data, u32 size);
+void memory_copy_read (memory_t *memory, u32 address, u32 size, void *buffer);
+void memory_copy_write(memory_t *memory, u32 address, u32 size, void *buffer);
+
+void memory_read(memory_t *memory, u32 address, void *data, u32 size);
+void memory_read_u8 (memory_t * restrict memory, u32 address, u8  * restrict destination);
+void memory_read_u16(memory_t * restrict memory, u32 address, u16 * restrict destination);
+void memory_read_u32(memory_t * restrict memory, u32 address, u32 * restrict destination);
+
 void memory_write(memory_t *memory, u32 address, u32   data, u32 size);
+void memory_write_u8 (memory_t * restrict memory, u32 address, const u8  data);
+void memory_write_u16(memory_t * restrict memory, u32 address, const u16 data);
+void memory_write_u32(memory_t * restrict memory, u32 address, const u32 data);
+
 
 #endif // __MEMORY_H__
 

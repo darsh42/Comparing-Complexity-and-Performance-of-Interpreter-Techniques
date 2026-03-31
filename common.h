@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdalign.h>
 #include <stdatomic.h>
 
 #include <elf.h>

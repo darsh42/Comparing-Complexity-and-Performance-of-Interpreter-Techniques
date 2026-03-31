@@ -11,13 +11,11 @@
         return;                                                 \
                                                                 \
     /* read the next opcode */                                  \
-    memory_read(                                                \
-        memory, mips->r[MIPS_R_PC],                             \
-        &mips->r[MIPS_R_CIR], 4);                               \
+    memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);          \
                                                                 \
     /* goto the next label */                                   \
     goto *primary[                                              \
-        (mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK]
+        (cir >> OP_SHIFT) & OP_MASK]
                                                                  
 void interpreter_computed_goto(struct mips *mips, struct memory *memory) {     
     /* define each label array */                                
@@ -63,15 +61,17 @@ void interpreter_computed_goto(struct mips *mips, struct memory *memory) {
         [BLTZAL_RT]  = &&do_bltzal,  [BGEZAL_RT] = &&do_bgezal,
     };
 
+    u32 cir;
+
     /* start dispatch chain */
     DISPATCH;
     
 do_secondary:
     goto *secondary[
-        (mips->r[MIPS_R_CIR] >> FN_SHIFT) & FN_MASK];
+        (cir >> FN_SHIFT) & FN_MASK];
 do_branch:
     goto *branch[
-        (mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK];
+        (cir >> RT_SHIFT) & RT_MASK];
 
 #ifndef   __DISASSEMBLE__
 #define X(type, formatter, impl, opcode, name)                  \

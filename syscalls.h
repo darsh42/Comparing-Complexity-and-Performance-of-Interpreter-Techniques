@@ -83,23 +83,20 @@ static inline void mips_syscall_open(struct mips *mips, struct memory *memory,
     // find string length
     u8 c; u32 size = 0;
     do {
-        memory_read(memory, 
-            name+size++, 1, &c);
+        memory_read_u8(memory, 
+            name+size++, &c);
     } while(c != '\0');
 
     // allocate for filename
-    u8 *buffer = malloc(size);
+    const char *buffer = malloc(size);
     if (!buffer) {
         // handle error
         assert(0);
     }
     
     // copy filename
-    u32 i = 0;
-    do {
-        memory_read(memory, 
-            name+i, 1, &buffer[i]);
-    } while(buffer[i++] != '\0');
+    memory_copy_read(memory, name, 
+                     size, (void*) buffer);
 
     // process open syscall
     mips->r[MIPS_R_V0] = (flags & O_CREAT) ?
@@ -107,7 +104,7 @@ static inline void mips_syscall_open(struct mips *mips, struct memory *memory,
         open(buffer, flags);
 
     // free filename buffer
-    free(buffer);
+    free((void*) buffer);
 }
 
 
@@ -160,10 +157,10 @@ static inline void mips_syscall_ioctl(struct mips *mips, struct memory *memory,
                     "failed to get terminal window size");
 
             /* write the window size to the guest memory */
-            memory_write(memory, argp+0, ws.ws_row,    2);
-            memory_write(memory, argp+2, ws.ws_col,    2);
-            memory_write(memory, argp+4, ws.ws_xpixel, 2);
-            memory_write(memory, argp+6, ws.ws_ypixel, 2);
+            memory_write_u16(memory, argp+0, ws.ws_row   );
+            memory_write_u16(memory, argp+2, ws.ws_col   );
+            memory_write_u16(memory, argp+4, ws.ws_xpixel);
+            memory_write_u16(memory, argp+6, ws.ws_ypixel);
 
             /* success */
             mips->r[MIPS_R_V0] = 0;
@@ -196,10 +193,8 @@ static inline void mips_syscall_writev(struct mips *mips, struct memory *memory,
         } iovec = {0};
 
         /* read in iovec */
-        memory_read(memory, ptr + c*8 + 0, 
-                &iovec.address, 4);
-        memory_read(memory, ptr + c*8 + 4, 
-                &iovec.length, 4);
+        memory_read_u32(memory, ptr + c*8 + 0, &iovec.address);
+        memory_read_u32(memory, ptr + c*8 + 4, &iovec.length);
 
         if (iovec.length) {
             // allocate memort for string
@@ -247,8 +242,8 @@ static inline void mips_syscall_mmap2(struct mips *mips, struct memory *memory,
                                       u32 addr, u32 len, u32 prot, u32 flags) {
     // retrieve all stack arguments
     u32 fd, pgoff;
-    memory_read(memory, mips->r[MIPS_R_SP]+16, &fd,    4);
-    memory_read(memory, mips->r[MIPS_R_SP]+20, &pgoff, 4);
+    memory_read_u32(memory, mips->r[MIPS_R_SP]+16, &fd   );
+    memory_read_u32(memory, mips->r[MIPS_R_SP]+20, &pgoff);
 
     // align len for mmap segment
     len = (len + 0xfff) & ~0xfff;
@@ -277,6 +272,16 @@ static inline void mips_syscall_mmap2(struct mips *mips, struct memory *memory,
     // return start and set error to 0
     mips->r[MIPS_R_V0] = target_address;
     mips->r[MIPS_R_A3] = 0;
+}
+
+static inline void mips_syscall_munmap(struct mips *mips, struct memory *memory,
+                                       u32 addr, u32 len, u32 _a2, u32 _a3) {
+    (void) _a2; (void) _a3;
+    
+    // memory_deallocate(memory, addr, len);
+
+    mips->r[MIPS_R_V0] = 0;
+    mips->r[MIPS_R_A0] = 0;
 }
 
 /* \brief syscall to set protection on a region of memory
@@ -312,12 +317,12 @@ static inline void mips_syscall_clock_gettime64(struct mips *mips, struct memory
     // get host time
     if (clock_gettime(clock_id, &host_ts) == 0) {
         // write seconds to guest structure
-        memory_write(memory, timespec_ptr +  0, (u32)(host_ts.tv_sec >>  0), 4); // tv_sec
-        memory_write(memory, timespec_ptr +  4, (u32)(host_ts.tv_sec >> 32), 4); // tv_sec
+        memory_write_u32(memory, timespec_ptr +  0, (u32)(host_ts.tv_sec >>  0)); // tv_sec
+        memory_write_u32(memory, timespec_ptr +  4, (u32)(host_ts.tv_sec >> 32)); // tv_sec
 
         // write nano seconds to guest structure
-        memory_write(memory, timespec_ptr +  8, (u32)(host_ts.tv_nsec >>  0), 4); // tv_sec
-        memory_write(memory, timespec_ptr + 12, (u32)(host_ts.tv_nsec >> 32), 4); // tv_sec
+        memory_write_u32(memory, timespec_ptr +  8, (u32)(host_ts.tv_nsec >>  0)); // tv_sec
+        memory_write_u32(memory, timespec_ptr + 12, (u32)(host_ts.tv_nsec >> 32)); // tv_sec
 
         // set success
         mips->r[MIPS_R_V0] = 0;

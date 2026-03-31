@@ -33,7 +33,7 @@ ExternalProject_Add(npb_benchmarks
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy 
                       ${CMAKE_CURRENT_SOURCE_DIR}/npb_make.def 
                       <SOURCE_DIR>/NPB3.4-OMP/config/make.def
-    BUILD_COMMAND make -C <SOURCE_DIR>/NPB3.4-OMP IS CLASS=S
+    BUILD_COMMAND make -C <SOURCE_DIR>/NPB3.4-OMP IS CLASS=W
     INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/bin
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                     <SOURCE_DIR>/NPB3.4-OMP/bin/

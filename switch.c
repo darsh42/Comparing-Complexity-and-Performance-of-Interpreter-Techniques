@@ -26,10 +26,10 @@
 /* instruction generation */
 void interpreter_switch(struct mips *mips, struct memory *memory) {
     for (; !mips->halted; ) {
+        u32 cir;
 
         /* read the next opcode */
-        memory_read(memory, mips->r[MIPS_R_PC], 
-                    &mips->r[MIPS_R_CIR], 4);
+        memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);
 
         /* the below switch statement might seem a slight bit confusing
          * essentially there are 3 categories of instructions, primary,
@@ -60,33 +60,33 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
 #endif // __DISASSEMBLE__
 
         /* process opcode */
-        switch((mips->r[MIPS_R_CIR] >> OP_SHIFT) & OP_MASK) {
+        switch((cir >> OP_SHIFT) & OP_MASK) {
         /*  PRIMARY INSTRUCTION BLOCK */
         __INSTRUCTIONS_PRIMARY
         default:
             fprintf(stderr, "instruction: %08x: 0x%08x\n", 
-                    mips->r[MIPS_R_PC], mips->r[MIPS_R_CIR]);
+                    mips->r[MIPS_R_PC], cir);
             assert(0 && "Unknown primary instruction");
 
     
         /* SECONDARY INSTRUCTION BLOCK */
         case 0x0:
-        switch((mips->r[MIPS_R_CIR] >> FN_SHIFT) & FN_MASK) {
+        switch((cir >> FN_SHIFT) & FN_MASK) {
         __INSTRUCTIONS_SECONDARY
         default:
             fprintf(stderr, "instruction: %08x: 0x%08x\n", 
-                    mips->r[MIPS_R_PC], mips->r[MIPS_R_CIR]);
+                    mips->r[MIPS_R_PC], cir);
             assert(0 && "Unknown secondary instruction");
         }
         break;
 
         /*  BRANCH INSTRUCTION BLOCK */
         case 0x1:
-        switch((mips->r[MIPS_R_CIR] >> RT_SHIFT) & RT_MASK) {
+        switch((cir >> RT_SHIFT) & RT_MASK) {
         __INSTRUCTIONS_BRANCH
         default:
             fprintf(stderr, "instruction: %08x: 0x%08x\n", 
-                    mips->r[MIPS_R_PC], mips->r[MIPS_R_CIR]);
+                    mips->r[MIPS_R_PC], cir);
             assert(0 && "Unknown branch instruction");
         }
         break;

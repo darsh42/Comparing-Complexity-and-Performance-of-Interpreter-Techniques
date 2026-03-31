@@ -149,10 +149,10 @@ add_executable(expanded_blocked
 add_executable(expanded_blocked_chaining
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c)
 
-target_compile_options(computed-goto
-    PRIVATE
-    -fno-gcse
-    -fno-crossjumping)
+#target_compile_options(computed-goto
+#    PRIVATE
+#    -fno-gcse
+#    -fno-crossjumping)
 
 target_compile_definitions(switch
     PRIVATE
