@@ -6,8 +6,69 @@
 #include "loader.h"
 #include "instructions.h"
 
+typedef struct op op_t;
+
+typedef void (*handler) (u32, 
+     struct mips   * restrict, 
+     struct memory * restrict,
+     op_t, op_t * restrict);
+
+typedef struct op {
+    u32     cir;
+    handler op;
+} op_t;
+
+typedef struct block {
+    u32  address;
+    u32  size;
+    op_t *ops;
+    bool indirect;
+
+    struct block *next[2]; // 0 - continue
+                           // 1 - jump/branch
+
+    UT_hash_handle hh;
+} block_t;
+
+#ifndef __DISASSEMBLE__
+#define X(prologue, formatter, implementation, value, name)            \
+    static void interpret_##name(u32 cir,                              \
+                                 struct mips   * restrict mips,        \
+                                 struct memory * restrict memory,      \
+                                 op_t next, op_t * restrict rest) {    \
+        prologue                                                       \
+        implementation                                                 \
+        mips->r[MIPS_R_PC] += 4;                                       \
+        if (next.op) {                                                 \
+            __attribute__((musttail))                                  \
+            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
+        }                                                              \
+        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
+    }
+#else
+#define X(prologue, formatter, implementation, value, name)            \
+    static void interpret_##name(u32 cir,                              \
+                                 struct mips   * restrict mips,        \
+                                 struct memory * restrict memory,      \
+                                 op_t next, op_t * restrict rest) {    \
+        prologue                                                       \
+        formatter(#name)                                               \
+        implementation                                                 \
+        mips->r[MIPS_R_PC] += 4;                                       \
+        if (next.op) {                                                 \
+            __attribute__((musttail))                                  \
+            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
+        }                                                              \
+        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
+    }
+#endif // __DISASSEMBLY__
+
+__INSTRUCTIONS
+
+#undef X
+
 #define DISPATCH                                  \
-    memory_read(memory, pc, &cir, 4);             \
+    memory_read_u32(memory, pc, &cir);            \
     pc += 4;                                      \
     goto *primary[                                \
         (cir >> OP_SHIFT) & OP_MASK];
@@ -38,40 +99,12 @@
         branched = 1;                             \
         DISPATCH
 
-#ifdef __DISASSEMBLE__
-#define X(type, formatter, impl, opcode, name)          \
-    static void interpret_##name(struct mips *mips,     \
-                          struct memory *memory) {      \
-        type                                            \
-        formatter(#name)                                \
-        impl                                            \
-    }
-#else // __DISASSEMBLE__
-#define X(type, formatter, impl, opcode, name)         \
-    static void interpret_##name(struct mips *mips,    \
-                          struct memory *memory) {     \
-        type                                           \
-        impl                                           \
-    }
-#endif // __DISASSEMBLE__
-
-__INSTRUCTIONS
-
-#undef X
-
-typedef struct {
-    u32 cir;
-    void (*op)
-        (struct mips*, struct memory *);
-} op_t;
-
-typedef struct block {
-    u32 address;                            /* key + start address of block  */
-    u32 size;                               /* number of operations in block */
-    op_t *ops;                              /* operations in a block         */
-
-    UT_hash_handle hh;                      /* make this structure hashable  */
-} block_t;
+#define LABEL_BRANCH_INDIRECT(name, function)     \
+    do_ ## name:                                  \
+        DARRAY_PUSH(ops, &function);              \
+        branched = 1;                             \
+        indirect = 1;                             \
+        DISPATCH
 
 static block_t *decode_block(struct mips   *mips,
                              struct memory *memory) {
@@ -90,10 +123,11 @@ static block_t *decode_block(struct mips   *mips,
         [XORI_OP]    = &&do_xori,    [LUI_OP]    = &&do_lui,
         [LB_OP]      = &&do_lb,      [LH_OP]     = &&do_lh,
         [LWL_OP]     = &&do_lwl,     [LW_OP]     = &&do_lw,
-        [LBU_OP]     = &&do_lbu,     [LHU_OP]    = &&do_lhu,
-        [LWR_OP]     = &&do_lwr,     [SB_OP]     = &&do_sb,
+        [LL_OP]      = &&do_ll,      [LBU_OP]     = &&do_lbu,
+        [LHU_OP]    = &&do_lhu,      [LWR_OP]     = &&do_lwr,
         [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
         [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
+        [SB_OP]     = &&do_sb,       [SC_OP]      = &&do_sc,
         [RDHWR_OP]   = &&do_rdhwr,
     };
     static const void *secondary[] = {
@@ -111,6 +145,7 @@ static block_t *decode_block(struct mips   *mips,
         [AND_FN]     = &&do_and,     [OR_FN]     = &&do_or,
         [XOR_FN]     = &&do_xor,     [NOR_FN]    = &&do_nor,
         [SLT_FN]     = &&do_slt,     [SLTU_FN]   = &&do_sltu,
+        [SPECIAL_FN] = &&do_special,
     };
     static const void *branch[] = {
         [BLTZ_RT]    = &&do_bltz,    [BGEZ_RT]   = &&do_bgez,
@@ -122,122 +157,153 @@ static block_t *decode_block(struct mips   *mips,
     
     // branched flag
     u32 branched = 0;
+    u32 indirect = 0;
     
     // processor registers 
-    u32 pc = mips->r[MIPS_R_PC], cir = 0;
+    u32 pc = mips->r[MIPS_R_PC], cir;
 
     // ops dynamic array values;
     u32  size = 0, capacity = 32;
     op_t *ops = malloc(sizeof(*ops) * capacity);
 
-    for (;;) {
-        /* start dispatch chain */
-        DISPATCH;
-        
+    /* start dispatch chain */
+    DISPATCH;
+    
 do_secondary: goto *secondary[(cir >> FN_SHIFT) & FN_MASK];
 do_branch:    goto    *branch[(cir >> RT_SHIFT) & RT_MASK];
 
-        /*========== branching instructions ===========*/
-        LABEL_BRANCH(jr,     interpret_jr);
-        LABEL_BRANCH(jalr,   interpret_jalr);
-        LABEL_BRANCH(bltz,   interpret_bltz);
-        LABEL_BRANCH(bgez,   interpret_bgez);
-        LABEL_BRANCH(blez,   interpret_blez);
-        LABEL_BRANCH(bgtz,   interpret_bgtz);
-        LABEL_BRANCH(bltzal, interpret_bltzal);
-        LABEL_BRANCH(bgezal, interpret_bgezal);
-        LABEL_BRANCH(j,      interpret_j);
-        LABEL_BRANCH(jal,    interpret_jal);
-        LABEL_BRANCH(beq,    interpret_beq);
-        LABEL_BRANCH(bne,    interpret_bne);
+    /*========== indirect branching instructions ===========*/
+    LABEL_BRANCH_INDIRECT(jr,   interpret_jr);
+    LABEL_BRANCH_INDIRECT(jalr, interpret_jalr);
 
-        /*============ basic instructions =============*/
-        LABEL(syscall,       interpret_syscall);
-        LABEL(brk,           interpret_brk);
-        LABEL(sll,           interpret_sll);
-        LABEL(srl,           interpret_srl);
-        LABEL(sra,           interpret_sra);
-        LABEL(sllv,          interpret_sllv);
-        LABEL(srlv,          interpret_srlv);
-        LABEL(srav,          interpret_srav);
-        LABEL(mfhi,          interpret_mfhi);
-        LABEL(mflo,          interpret_mflo);
-        LABEL(mthi,          interpret_mthi);
-        LABEL(mtlo,          interpret_mtlo);
-        LABEL(mult,          interpret_mult);
-        LABEL(multu,         interpret_multu);
-        LABEL(div,           interpret_div);
-        LABEL(divu,          interpret_divu);
-        LABEL(add,           interpret_add);
-        LABEL(addu,          interpret_addu);
-        LABEL(sub,           interpret_sub);
-        LABEL(subu,          interpret_subu);
-        LABEL(slt,           interpret_slt);
-        LABEL(sltu,          interpret_sltu);
-        LABEL(and,           interpret_and);
-        LABEL(or,            interpret_or);
-        LABEL(xor,           interpret_xor);
-        LABEL(nor,           interpret_nor);
-        LABEL(addi,          interpret_addi);
-        LABEL(addiu,         interpret_addiu);
-        LABEL(slti,          interpret_slti);
-        LABEL(sltiu,         interpret_sltiu);
-        LABEL(andi,          interpret_andi);
-        LABEL(ori,           interpret_ori);
-        LABEL(xori,          interpret_xori);
-        LABEL(lui,           interpret_lui);
-        LABEL(lb,            interpret_lb);
-        LABEL(lh,            interpret_lh);
-        LABEL(lwl,           interpret_lwl);
-        LABEL(lw,            interpret_lw);
-        LABEL(lbu,           interpret_lbu);
-        LABEL(lhu,           interpret_lhu);
-        LABEL(lwr,           interpret_lwr);
-        LABEL(sb,            interpret_sb);
-        LABEL(sh,            interpret_sh);
-        LABEL(swl,           interpret_swl);
-        LABEL(sw,            interpret_sw);
-        LABEL(swr,           interpret_swr);
-        LABEL(rdhwr,         interpret_rdhwr);
-    }
+    /*========== branching instructions ===========*/
+    LABEL_BRANCH(bltz,   interpret_bltz);
+    LABEL_BRANCH(bgez,   interpret_bgez);
+    LABEL_BRANCH(blez,   interpret_blez);
+    LABEL_BRANCH(bgtz,   interpret_bgtz);
+    LABEL_BRANCH(bltzal, interpret_bltzal);
+    LABEL_BRANCH(bgezal, interpret_bgezal);
+    LABEL_BRANCH(j,      interpret_j);
+    LABEL_BRANCH(jal,    interpret_jal);
+    LABEL_BRANCH(beq,    interpret_beq);
+    LABEL_BRANCH(bne,    interpret_bne);
+
+    /*============ basic instructions =============*/
+    LABEL(syscall,       interpret_syscall);
+    LABEL(special,       interpret_special);
+    LABEL(brk,           interpret_brk);
+    LABEL(sll,           interpret_sll);
+    LABEL(srl,           interpret_srl);
+    LABEL(sra,           interpret_sra);
+    LABEL(sllv,          interpret_sllv);
+    LABEL(srlv,          interpret_srlv);
+    LABEL(srav,          interpret_srav);
+    LABEL(mfhi,          interpret_mfhi);
+    LABEL(mflo,          interpret_mflo);
+    LABEL(mthi,          interpret_mthi);
+    LABEL(mtlo,          interpret_mtlo);
+    LABEL(mult,          interpret_mult);
+    LABEL(multu,         interpret_multu);
+    LABEL(div,           interpret_div);
+    LABEL(divu,          interpret_divu);
+    LABEL(add,           interpret_add);
+    LABEL(addu,          interpret_addu);
+    LABEL(sub,           interpret_sub);
+    LABEL(subu,          interpret_subu);
+    LABEL(slt,           interpret_slt);
+    LABEL(sltu,          interpret_sltu);
+    LABEL(and,           interpret_and);
+    LABEL(or,            interpret_or);
+    LABEL(xor,           interpret_xor);
+    LABEL(nor,           interpret_nor);
+    LABEL(addi,          interpret_addi);
+    LABEL(addiu,         interpret_addiu);
+    LABEL(slti,          interpret_slti);
+    LABEL(sltiu,         interpret_sltiu);
+    LABEL(andi,          interpret_andi);
+    LABEL(ori,           interpret_ori);
+    LABEL(xori,          interpret_xori);
+    LABEL(lui,           interpret_lui);
+    LABEL(lb,            interpret_lb);
+    LABEL(lh,            interpret_lh);
+    LABEL(lwl,           interpret_lwl);
+    LABEL(lw,            interpret_lw);
+    LABEL(ll,            interpret_ll);
+    LABEL(lbu,           interpret_lbu);
+    LABEL(lhu,           interpret_lhu);
+    LABEL(lwr,           interpret_lwr);
+    LABEL(sb,            interpret_sb);
+    LABEL(sh,            interpret_sh);
+    LABEL(swl,           interpret_swl);
+    LABEL(sw,            interpret_sw);
+    LABEL(sc,            interpret_sc);
+    LABEL(swr,           interpret_swr);
+    LABEL(rdhwr,         interpret_rdhwr);
 
 complete:
-    
+    // append null terminator
+    DARRAY_PUSH(ops, NULL);
+
     blk = malloc(sizeof(*blk));
-    blk->address = mips->r[MIPS_R_PC];
-    blk->size    = size;
-    blk->ops     = ops;
+    blk->address  = mips->r[MIPS_R_PC];
+    blk->size     = size;
+    blk->ops      = ops;
+    blk->indirect = indirect;
+
+    blk->next[0]  = NULL;
+    blk->next[1]  = NULL;
 
     return blk;
 }
 
 #ifndef __MACRO_EXPANSION__
-void interpreter_blocked(struct mips   *mips, 
-                         struct memory *memory) {
-    block_t *blocks = NULL;
+void interpreter_blocked(struct mips   * restrict mips,
+                         struct memory * restrict memory) {
+    block_t *blocks = NULL, *previous = NULL;
 
-    for (; !mips->halted ;) {
-        block_t *blk = NULL;
- 
+    while (!mips->halted) {
+        block_t *current = NULL;
+        
         HASH_FIND(hh, blocks, 
-            &mips->r[MIPS_R_PC], sizeof(u32), blk);
+            &mips->r[MIPS_R_PC], sizeof(u32), current);
 
-        if (blk == NULL) {
-            blk = decode_block(mips, memory);
-
-            assert(blk &&
-                "blk not created!");
-
+        if (current == NULL) {
+            // decode new block
+            current = decode_block(mips, memory);
+            
+            // add to hash table
             HASH_ADD(hh, blocks, 
-                address, sizeof(u32), blk);
+                address, sizeof(u32), current);
         }
 
-        for (u32 s = 0; s < blk->size; s++) {
-            op_t o = blk->ops[s];
-            mips->r[MIPS_R_CIR] = o.cir;
-            o.op(mips, memory);
-            INCREMENT_PC;
+        // check if there is a previous block and link
+        if (previous != NULL && !previous->indirect) {
+            previous->next[mips->branched] = current;
         }
+
+        do {
+            // get ops local
+            op_t     *ops  = current->ops;
+            block_t **link = current->next;
+
+            // get first instruction
+            handler op =  ops->op;
+            u32     cir = ops->cir;
+            
+            // get next
+            op_t next  = *(ops+1);
+
+            // prefetch next blocks
+            __builtin_prefetch(link[0], 0, 1);
+            __builtin_prefetch(link[1], 0, 1);
+
+            // process instructions
+            op(cir, mips, memory, next, ops+2);
+
+            // set new block pointers
+            previous = current;
+            current  = link[mips->branched];
+        } while (current && !previous->indirect && !mips->halted);
     }
 
     block_t *b, *t;
@@ -247,7 +313,6 @@ void interpreter_blocked(struct mips   *mips,
         free(b);
     }
 }
-
 
 #ifdef __BLOCKED_MAIN__
 int main(int argc, char **argv) {
@@ -261,7 +326,7 @@ int main(int argc, char **argv) {
     struct memory memory = {};
 
     /* handle any explicit object creation */
-    create_memory(&memory);
+    memory_create(&memory);
     
     /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
@@ -270,7 +335,7 @@ int main(int argc, char **argv) {
     interpreter_blocked(&mips, &memory);
 
     /* clean up */
-    delete_memory(&memory);
+    memory_delete(&memory);
 
     return 0;
 }

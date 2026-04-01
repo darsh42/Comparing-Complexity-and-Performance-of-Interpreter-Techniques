@@ -395,13 +395,16 @@
 #define BRANCH                                                                \
     mips->branched       = true;                                              \
     mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_PC] + (((s32)(s16)imm16) << 2) + 4;
+#define NOT_BRANCH                                                            \
+    mips->branched       = false;                                             \
+    mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_PC] + 8;
 
-#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH }
-#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH }
-#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH }
-#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH }
-#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs <  0) { BRANCH }
-#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs >= 0) { BRANCH }
+#define ITP_BLTZ_IMPL   if ((s32) value_rs <  0) { BRANCH } else { NOT_BRANCH }
+#define ITP_BGEZ_IMPL   if ((s32) value_rs >= 0) { BRANCH } else { NOT_BRANCH }
+#define ITP_BLEZ_IMPL   if ((s32) value_rs <= 0) { BRANCH } else { NOT_BRANCH }
+#define ITP_BGTZ_IMPL   if ((s32) value_rs >  0) { BRANCH } else { NOT_BRANCH }
+#define ITP_BLTZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs <  0) { BRANCH } else { NOT_BRANCH }
+#define ITP_BGEZAL_IMPL mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8; if ((s32) value_rs >= 0) { BRANCH } else { NOT_BRANCH }
 
 #define ITP_J_IMPL                                                          \
     mips->branched = true;                                                  \
@@ -412,8 +415,8 @@
     mips->r[MIPS_R_RA] = mips->r[MIPS_R_PC] + 8;                            \
     mips->r[MIPS_R_NNPC] = (mips->r[MIPS_R_PC] & 0xf0000000) | (imm26 << 2);
 
-#define ITP_BEQ_IMPL if (value_rs == value_rt) { BRANCH }
-#define ITP_BNE_IMPL if (value_rs != value_rt) { BRANCH }
+#define ITP_BEQ_IMPL if (value_rs == value_rt) { BRANCH } else { NOT_BRANCH }
+#define ITP_BNE_IMPL if (value_rs != value_rt) { BRANCH } else { NOT_BRANCH }
 
 #define ITP_ADDI_IMPL            \
     s64 a = value_rs;            \
@@ -437,7 +440,7 @@
 
 #ifdef LOAD_DELAY_ENABLE
 #define ITP_LB_IMPL                              \
-    u32 read = 0;                                \
+    u8 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u8(memory, address, &read);      \
     if (mips->load_d != rt) {                    \
@@ -446,7 +449,7 @@
     mips->load_d = rt;                           \
     mips->load_v = (s32) (s8) read;
 #define ITP_LH_IMPL                              \
-    u32 read = 0;                                \
+    u16 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u16(memory, address, &read);     \
     if (mips->load_d != rt) {                    \
@@ -464,23 +467,23 @@
     mips->load_d = rt;                           \
     mips->load_v = read;
 #define ITP_LBU_IMPL                             \
-    u32 read = 0;                                \
+    u8 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u8(memory, address, &read);      \
     if (mips->load_d != rt) {                    \
         ITP_LOAD_DELAY                           \
     }                                            \
     mips->load_d = rt;                           \
-    mips->load_v = read;
+    mips->load_v = (u32) read;
 #define ITP_LHU_IMPL                             \
-    u32 read = 0;                                \
+    u16 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u16(memory, address, &read);     \
     if (mips->load_d != rt) {                    \
         ITP_LOAD_DELAY                           \
     }                                            \
     mips->load_d = rt;                           \
-    mips->load_v = read;
+    mips->load_v = (u16) read;
 #define ITP_LWL_IMPL /* TODO: */                  \
     u32 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;           \
@@ -499,12 +502,12 @@
     mips->load_v = read;
 #else  // LOAD_DELAY_ENABLE
 #define ITP_LB_IMPL                              \
-    u32 read = 0;                                \
+    u8 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u8(memory, address, &read);      \
     mips->r[rt] = (s32) (s8) read;
 #define ITP_LH_IMPL                              \
-    u32 read = 0;                                \
+    u16 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u16(memory, address, &read);     \
     mips->r[rt] = (s32) (s16) read;
@@ -514,12 +517,12 @@
     memory_read_u32(memory, address, &read);     \
     mips->r[rt] = read;
 #define ITP_LBU_IMPL                             \
-    u32 read = 0;                                \
+    u8 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u8(memory, address, &read);      \
     mips->r[rt] = read & 0xff;
 #define ITP_LHU_IMPL                             \
-    u32 read = 0;                                \
+    u16 read = 0;                                \
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     memory_read_u16(memory, address, &read);     \
     mips->r[rt] = read;

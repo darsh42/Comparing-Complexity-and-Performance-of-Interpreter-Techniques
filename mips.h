@@ -122,16 +122,6 @@
     mips->r[MIPS_R_NPC]  = mips->r[MIPS_R_NNPC];            \
     mips->r[MIPS_R_NNPC] = mips->r[MIPS_R_NNPC]+4;
 
-#define __MIPS_SYSCALL_NR 4000
-#define __SYSCALLS \
-    X(MIPS_SYSCALL_READ,          3 + __MIPS_SYSCALL_NR, "syscall_read")  \
-    X(MIPS_SYSCALL_WRITE,         4 + __MIPS_SYSCALL_NR, "syscall_write") \
-    X(MIPS_SYSCALL_OPEN,          5 + __MIPS_SYSCALL_NR, "syscall_open")  \
-    X(MIPS_SYSCALL_CLOSE,         6 + __MIPS_SYSCALL_NR, "syscall_close") \
-    X(MIPS_SYSCALL_LSEEK,        19 + __MIPS_SYSCALL_NR, "syscall_lseek") \
-    X(MIPS_SYSCALL_EXIT_GROUP,  210 + __MIPS_SYSCALL_NR, "syscall_exit_group") \
-    X(MIPS_SYSCALL_TID_ADDR,    283 + __MIPS_SYSCALL_NR, "syscall_tid_addr")
-
 enum MIPS_SECTION {
     OLD_BLOCK = 0,
     NEW_BLOCK = 1
