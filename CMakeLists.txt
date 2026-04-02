@@ -52,7 +52,7 @@ target_compile_options(release-flags
 add_library(debug-flags INTERFACE)
 target_compile_options(debug-flags
     INTERFACE
-    -Os
+    -O3
     -Wall
     -Wextra
     -Wfloat-equal
@@ -86,9 +86,8 @@ add_custom_command(
     OUTPUT 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_switch.c
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_computed-goto.c
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_decoupled.c
+        ${CMAKE_CURRENT_BINARY_DIR}/expanded_tail-call.c
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/expand_macro.sh 
         ${CMAKE_CURRENT_SOURCE_DIR}/switch.c > 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_switch.c
@@ -96,58 +95,47 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c > 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_computed-goto.c
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/expand_macro.sh 
-        ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c > 
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_decoupled.c
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/expand_macro.sh 
         ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c > 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/expand_macro.sh 
-        ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c > 
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/tail-call.c > 
+        ${CMAKE_CURRENT_BINARY_DIR}/expanded_tail-call.c
     DEPENDS 
         ${CMAKE_CURRENT_SOURCE_DIR}/switch.c 
         ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c
         ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c
         ${CMAKE_CURRENT_SOURCE_DIR}/expand_macro.sh
     COMMENT "Expanding all C-Preprocessor macros ..."
     VERBATIM)
 set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_switch.c
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_computed-goto.c
-    ${CMAKE_CURRENT_BINARY_DIR}/expanded_decoupled.c
+    ${CMAKE_CURRENT_BINARY_DIR}/expanded_tail-call.c
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c
-    ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c
     PROPERTIES GENERATED TRUE)
 ############################# TARGET ##################################
 add_executable(switch
     ${CMAKE_CURRENT_SOURCE_DIR}/switch.c)
 add_executable(computed-goto
     ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c)
-add_executable(decoupled
-    ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c)
+add_executable(tail-call
+    ${CMAKE_CURRENT_SOURCE_DIR}/tail-call.c)
 add_executable(blocked
     ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c)
-add_executable(blocked_chaining
-    ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c)
 add_executable(testsuite
     ${CMAKE_CURRENT_SOURCE_DIR}/testsuite.c
     ${CMAKE_CURRENT_SOURCE_DIR}/switch.c
     ${CMAKE_CURRENT_SOURCE_DIR}/computed-goto.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/blocked_chaining.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/decoupled.c)
+    ${CMAKE_CURRENT_SOURCE_DIR}/blocked.c)
+
 add_executable(expanded_switch
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_switch.c)
 add_executable(expanded_computed-goto
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_computed-goto.c)
-add_executable(expanded_decoupled
-    ${CMAKE_CURRENT_BINARY_DIR}/expanded_decoupled.c)
+add_executable(expanded_tail-call
+    ${CMAKE_CURRENT_BINARY_DIR}/expanded_tail-call.c)
 add_executable(expanded_blocked
     ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c)
-add_executable(expanded_blocked_chaining
-    ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c)
 
 #target_compile_options(computed-goto
 #    PRIVATE
@@ -160,57 +148,49 @@ target_compile_definitions(switch
 target_compile_definitions(computed-goto
     PRIVATE
     __COMPUTED_GOTO_MAIN__)
-target_compile_definitions(decoupled
+target_compile_definitions(tail-call
     PRIVATE
-    __DECOUPLED_MAIN__)
+    __TAIL_CALL_MAIN__)
 target_compile_definitions(blocked
     PRIVATE
     __BLOCKED_MAIN__)
-target_compile_definitions(blocked_chaining
-    PRIVATE
-    __BLOCKED_CHAINING_MAIN__)
 target_compile_definitions(testsuite
     PRIVATE
     __TESTSUITE_MAIN__)
+
 target_compile_definitions(expanded_switch
     PRIVATE
     __SWITCH_MAIN__)
 target_compile_definitions(expanded_computed-goto
     PRIVATE
     __COMPUTED_GOTO_MAIN__)
-target_compile_definitions(expanded_decoupled
+target_compile_definitions(expanded_tail-call
     PRIVATE
-    __DECOUPLED_MAIN__)
+    __TAIL_CALL_MAIN__)
 target_compile_definitions(expanded_blocked
     PRIVATE
     __BLOCKED_MAIN__)
-target_compile_definitions(expanded_blocked_chaining
-    PRIVATE
-    __BLOCKED_CHAINING_MAIN__)
 
 target_include_directories(switch
     PRIVATE .)
 target_include_directories(computed-goto
     PRIVATE .)
-target_include_directories(decoupled
+target_include_directories(tail-call
     PRIVATE .)
 target_include_directories(blocked
-    PRIVATE .)
-target_include_directories(blocked_chaining
     PRIVATE .)
 target_include_directories(testsuite
     PRIVATE
     .
     tests)
+
 target_include_directories(expanded_switch
     PRIVATE .)
 target_include_directories(expanded_computed-goto
     PRIVATE .)
-target_include_directories(expanded_decoupled
+target_include_directories(expanded_tail-call
     PRIVATE .)
 target_include_directories(expanded_blocked
-    PRIVATE .)
-target_include_directories(expanded_blocked_chaining
     PRIVATE .)
 
 target_link_libraries(switch
@@ -223,7 +203,7 @@ target_link_libraries(computed-goto
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
-target_link_libraries(decoupled
+target_link_libraries(tail-call
     PRIVATE
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
@@ -233,16 +213,12 @@ target_link_libraries(blocked
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
-target_link_libraries(blocked_chaining
-    PRIVATE
-    supporting
-    $<$<CONFIG:RELEASE>: release-flags>
-    $<$<CONFIG:DEBUG>: debug-flags>)
 target_link_libraries(testsuite
     PRIVATE
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
+
 target_link_libraries(expanded_switch
     PRIVATE
     supporting
@@ -253,17 +229,12 @@ target_link_libraries(expanded_computed-goto
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
-target_link_libraries(expanded_decoupled
+target_link_libraries(expanded_tail-call
     PRIVATE
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
     $<$<CONFIG:DEBUG>: debug-flags>)
 target_link_libraries(expanded_blocked
-    PRIVATE
-    supporting
-    $<$<CONFIG:RELEASE>: release-flags>
-    $<$<CONFIG:DEBUG>: debug-flags>)
-target_link_libraries(expanded_blocked_chaining
     PRIVATE
     supporting
     $<$<CONFIG:RELEASE>: release-flags>
@@ -274,9 +245,7 @@ add_custom_target(analyse-lizard-complexity
     COMMAND lizard 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_switch.c 
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_computed-goto.c 
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_decoupled.c
         ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked.c 
-        ${CMAKE_CURRENT_BINARY_DIR}/expanded_blocked_chaining.c 
     VERBATIM)
 add_custom_target(generate-cfgs
     COMMAND joern-parse ${CMAKE_CURRENT_SOURCE_DIR} --output ${CMAKE_CURRENT_BINARY_DIR}/cpg.bin
@@ -284,7 +253,7 @@ add_custom_target(generate-cfgs
             ${CMAKE_CURRENT_BINARY_DIR}/cpg.bin
             --script ${CMAKE_CURRENT_SOURCE_DIR}/create_cfgs.sc 
             --param output=${CMAKE_CURRENT_BINARY_DIR}/cfgs 
-            --param functions="interpreter_switch,interpreter_computed_goto,interpreter_decoupled,interpreter_blocked,interpreter_blocked_chaining"
+            --param functions="interpreter_switch,interpreter_computed_goto,interpreter_tail_call,interpreter_blocked"
     
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
