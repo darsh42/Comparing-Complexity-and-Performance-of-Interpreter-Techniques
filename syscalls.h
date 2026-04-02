@@ -153,8 +153,10 @@ static inline void mips_syscall_ioctl(struct mips *mips, struct memory *memory,
             struct winsize ws;
 
             /* retrieve the host terminal window size */
-            assert(ioctl(fd, TIOCGWINSZ, &ws) == 0 &&
-                    "failed to get terminal window size");
+            if (ioctl(fd, TIOCGWINSZ, &ws) == -1) {
+                mips->r[MIPS_R_V0] = -25;
+                return;
+            }
 
             /* write the window size to the guest memory */
             memory_write_u16(memory, argp+0, ws.ws_row   );
