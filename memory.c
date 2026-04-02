@@ -1,6 +1,6 @@
 #include "memory.h"
 
-u8 *memory_find_page(memory_t *memory, u32 address) {
+static inline u8 *memory_find_page(memory_t *memory, u32 address) {
     // get table index, entry index and offset
     u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
     u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
