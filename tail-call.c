@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "loader.h"
 
+#include "benchmark.h"
 #include "instructions.h"
 
 // to forward declare handlers
@@ -63,34 +64,46 @@ static handler branch[] = {
     [BLTZAL_RT]  = &interpret_bltzal,  [BGEZAL_RT] = interpret_bgezal,
 };
 
-#ifndef   __DISASSEMBLE__
+#if    defined(__DISASSEMBLE__)
 #define X(prologue, formatter, implementation, value, name)                  \
     static void interpret_##name(u32 cir, struct mips   * restrict mips,     \
                                           struct memory * restrict memory) { \
-        prologue                                                             \
-        implementation                                                       \
-        INCREMENT_PC;                                                        \
-        if (!mips->halted) {                                                 \
-            memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);               \
-            __attribute__((musttail))                                        \
-            return primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);  \
-        }                                                                    \
-    }
-#else  // __DISASSEMBLE__
-#define X(prologue, formatter, implementation, value, name)                  \
-    static void interpret_##name(u32 cir, struct mips   * restrict mips,     \
-                                          struct memory * restrict memory) { \
+        if (mips->halted)                                                    \
+            return;                                                          \
         prologue                                                             \
         formatter(#name);                                                    \
         implementation                                                       \
         INCREMENT_PC;                                                        \
-        if (!mips->halted) {                                                 \
-            memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);               \
-            __attribute__((musttail))                                        \
-            return primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);  \
-        }                                                                    \
+        memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);                   \
+        return primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);      \
     }
-#endif // __DISASSEMBLE__
+#elif  defined(__PROFILE__)
+#define X(prologue, formatter, implementation, value, name)                  \
+    static void interpret_##name(u32 cir, struct mips   * restrict mips,     \
+                                          struct memory * restrict memory) { \
+        if (mips->halted)                                                    \
+            return;                                                          \
+        PROFILE_ENTER_INSTRUCTION                               \
+        prologue                                                             \
+        implementation                                                       \
+        PROFILE_EXIT_INSTRUCTION                                \
+        INCREMENT_PC;                                                        \
+        memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);                   \
+        return primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);      \
+    }
+#else
+#define X(prologue, formatter, implementation, value, name)                  \
+    static void interpret_##name(u32 cir, struct mips   * restrict mips,     \
+                                          struct memory * restrict memory) { \
+        if (mips->halted)                                                    \
+            return;                                                          \
+        prologue                                                             \
+        implementation                                                       \
+        INCREMENT_PC;                                                        \
+        memory_read_u32(memory, mips->r[MIPS_R_PC], &cir);                   \
+        return primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);      \
+    }
+#endif
 
 __INSTRUCTIONS
 
@@ -98,18 +111,19 @@ __INSTRUCTIONS
 
 static void interpret_secondary(u32 cir, struct mips   * restrict mips,
                                          struct memory * restrict memory) {
-    __attribute__((musttail))
     return secondary[(cir >> FN_SHIFT) & FN_MASK](cir, mips, memory);
 }
 
 static void interpret_branch(u32 cir, struct mips   * restrict mips,
                                       struct memory * restrict memory) {
-    __attribute__((musttail))
     return    branch[(cir >> RT_SHIFT) & RT_MASK](cir, mips, memory);
-
 }
 
 void interpreter_tail_call(struct mips *mips, struct memory *memory) {     
+#ifdef __PROFILE_INTERPRETER__
+    CALLGRIND_START_INSTRUMENTATION;
+#endif // __PROFILE_INTERPRETER
+
     // create cir variable
     u32 cir;
     
@@ -118,6 +132,10 @@ void interpreter_tail_call(struct mips *mips, struct memory *memory) {
 
     // dispatch first opcode
     primary[(cir >> OP_SHIFT) & OP_MASK](cir, mips, memory);
+
+#ifdef __PROFILE_INTERPRETER__
+    CALLGRIND_STOP_INSTRUMENTATION;
+#endif // __PROFILE_INTERPRETER
 }
 
 #ifndef __MACRO_EXPANSION__
@@ -137,9 +155,15 @@ int main(int argc, char **argv) {
     /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
 
+#ifdef    __PROFILE__
+    PROFILE_ENTER_INTERPRETER
+#endif // __PROFILE__
     /* interpret the loaded binary */
     interpreter_tail_call(&mips, &memory);
-
+#ifdef    __PROFILE__
+    PROFILE_EXIT_INTERPRETER
+#endif // __PROFILE__
+    
     /* clean up */
     memory_delete(&memory);
 

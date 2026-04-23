@@ -1,42 +1,5 @@
 #include "memory.h"
 
-static inline u8 *memory_find_page(memory_t *memory, u32 address) {
-    // get table index, entry index and offset
-    u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-    u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-    u32 offset = address & OFFSET_MASK;
-
-    // find table
-    page_table_t *table = memory->page_tables[pt_idx];
-    // assert(table && "[memory_find_page]: invalid table");
-
-    // find entry
-    page_entry_t  entry = table->page_entries[pe_idx];
-    // assert(entry && "[memory_find_page]: invalid entry");
-
-    // compute source location
-    return (u8 *)entry + offset;
-}
-
-void memory_read_u8 (memory_t * restrict memory, u32 address, u8  * restrict destination) {
-    *destination = *memory_find_page(memory, address);
-}
-void memory_read_u16(memory_t * restrict memory, u32 address, u16 * restrict destination) {
-    *destination = *(u16 *) memory_find_page(memory, address);
-}
-void memory_read_u32(memory_t * restrict memory, u32 address, u32 * restrict destination) {
-    *destination = *(u32 *) memory_find_page(memory, address);
-}
-void memory_write_u8 (memory_t * restrict memory, u32 address, const u8  data) {
-    *memory_find_page(memory, address) = data;
-}
-void memory_write_u16(memory_t * restrict memory, u32 address, const u16 data) {
-    *(u16 *)memory_find_page(memory, address) = data;
-}
-void memory_write_u32(memory_t * restrict memory, u32 address, const u32 data) {
-    *(u32 *)memory_find_page(memory, address) = data;
-}
-
 void memory_read(memory_t *memory, u32 address, void *data, u32 size) {
     assert(memory && data);
 

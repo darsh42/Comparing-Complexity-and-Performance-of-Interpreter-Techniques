@@ -4,6 +4,8 @@
 #include "mips.h"
 #include "memory.h"
 #include "loader.h"
+
+#include "benchmark.h"
 #include "instructions.h"
 
 typedef struct op op_t;
@@ -30,22 +32,7 @@ typedef struct block {
     UT_hash_handle hh;
 } block_t;
 
-#ifndef __DISASSEMBLE__
-#define X(prologue, formatter, implementation, value, name)            \
-    static void interpret_##name(u32 cir,                              \
-                                 struct mips   * restrict mips,        \
-                                 struct memory * restrict memory,      \
-                                 op_t next, op_t * restrict rest) {    \
-        prologue                                                       \
-        implementation                                                 \
-        mips->r[MIPS_R_PC] += 4;                                       \
-        if (next.op) {                                                 \
-            __attribute__((musttail))                                  \
-            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
-        }                                                              \
-        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
-    }
-#else
+#if    defined(__DISASSEMBLE__)
 #define X(prologue, formatter, implementation, value, name)            \
     static void interpret_##name(u32 cir,                              \
                                  struct mips   * restrict mips,        \
@@ -61,7 +48,36 @@ typedef struct block {
         }                                                              \
         mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
     }
-#endif // __DISASSEMBLY__
+#elif  defined(__PROFILE__)
+#define X(prologue, formatter, implementation, value, name)            \
+    static void interpret_##name(u32 cir,                              \
+                                 struct mips   * restrict mips,        \
+                                 struct memory * restrict memory,      \
+                                 op_t next, op_t * restrict rest) {    \
+        PROFILE_ENTER_INSTRUCTION                               \
+        prologue                                                       \
+        implementation                                                 \
+        PROFILE_EXIT_INSTRUCTION                                \
+        if (next.op) {                                                 \
+            __attribute__((musttail))                                  \
+            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
+        }                                                              \
+        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
+    }
+#else
+#define X(prologue, formatter, implementation, value, name)            \
+    static void interpret_##name(u32 cir,                              \
+                                 struct mips   * restrict mips,        \
+                                 struct memory * restrict memory,      \
+                                 op_t next, op_t * restrict rest) {    \
+        prologue                                                       \
+        implementation                                                 \
+        if (!next.op)                                                  \
+            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
+        else                                                           \
+            next.op(next.cir, mips,  memory, *rest, rest+1);           \
+    }
+#endif
 
 __INSTRUCTIONS
 
@@ -123,11 +139,11 @@ static block_t *decode_block(struct mips   *mips,
         [XORI_OP]    = &&do_xori,    [LUI_OP]    = &&do_lui,
         [LB_OP]      = &&do_lb,      [LH_OP]     = &&do_lh,
         [LWL_OP]     = &&do_lwl,     [LW_OP]     = &&do_lw,
-        [LL_OP]      = &&do_ll,      [LBU_OP]     = &&do_lbu,
-        [LHU_OP]    = &&do_lhu,      [LWR_OP]     = &&do_lwr,
+        [LL_OP]      = &&do_ll,      [LBU_OP]    = &&do_lbu,
+        [LHU_OP]     = &&do_lhu,     [LWR_OP]    = &&do_lwr,
         [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
         [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
-        [SB_OP]     = &&do_sb,       [SC_OP]      = &&do_sc,
+        [SB_OP]      = &&do_sb,      [SC_OP]     = &&do_sc,
         [RDHWR_OP]   = &&do_rdhwr,
     };
     static const void *secondary[] = {
@@ -256,9 +272,12 @@ complete:
     return blk;
 }
 
-#ifndef __MACRO_EXPANSION__
 void interpreter_blocked(struct mips   * restrict mips,
                          struct memory * restrict memory) {
+#ifdef __PROFILE_INTERPRETER__
+    CALLGRIND_START_INSTRUMENTATION;
+#endif // __PROFILE_INTERPRETER
+    
     block_t *blocks = NULL, *previous = NULL;
 
     while (!mips->halted) {
@@ -280,8 +299,15 @@ void interpreter_blocked(struct mips   * restrict mips,
         if (previous != NULL && !previous->indirect) {
             previous->next[mips->branched] = current;
         }
-
+        
         do {
+#ifndef    __DISASSEMBLE__
+            // if not disassembling, pre-increment
+            // program counter to value at branch
+            mips->r[MIPS_R_PC] += 
+                4*(current->size - 3);
+#endif // __DISASSEMBLE__
+
             // get ops local
             op_t     *ops  = current->ops;
             block_t **link = current->next;
@@ -312,8 +338,13 @@ void interpreter_blocked(struct mips   * restrict mips,
         free(b->ops);
         free(b);
     }
+
+#ifdef __PROFILE_INTERPRETER__
+    CALLGRIND_STOP_INSTRUMENTATION;
+#endif // __PROFILE_INTERPRETER
 }
 
+#ifndef __MACRO_EXPANSION__
 #ifdef __BLOCKED_MAIN__
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -330,9 +361,15 @@ int main(int argc, char **argv) {
     
     /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
-    
+
+#ifdef    __PROFILE__
+    PROFILE_ENTER_INTERPRETER
+#endif // __PROFILE__
     /* start the decoupled interpreter */
     interpreter_blocked(&mips, &memory);
+#ifdef    __PROFILE__
+    PROFILE_EXIT_INTERPRETER
+#endif // __PROFILE__
 
     /* clean up */
     memory_delete(&memory);

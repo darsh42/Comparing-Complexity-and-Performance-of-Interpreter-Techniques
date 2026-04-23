@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "loader.h"
 
+#include "benchmark.h"
 #include "instructions.h"
 
 #define DISPATCH                                                \
@@ -32,11 +33,11 @@ void interpreter_computed_goto(struct mips *mips, struct memory *memory) {
         [XORI_OP]    = &&do_xori,    [LUI_OP]    = &&do_lui,
         [LB_OP]      = &&do_lb,      [LH_OP]     = &&do_lh,
         [LWL_OP]     = &&do_lwl,     [LW_OP]     = &&do_lw,
-        [LL_OP]      = &&do_ll,      [LBU_OP]     = &&do_lbu,
-        [LHU_OP]    = &&do_lhu,      [LWR_OP]     = &&do_lwr,
+        [LL_OP]      = &&do_ll,      [LBU_OP]    = &&do_lbu,
+        [LHU_OP]     = &&do_lhu,      [LWR_OP]   = &&do_lwr,
         [SH_OP]      = &&do_sh,      [SWL_OP]    = &&do_swl,
         [SW_OP]      = &&do_sw,      [SWR_OP]    = &&do_swr,
-        [SB_OP]     = &&do_sb,       [SC_OP]      = &&do_sc,
+        [SB_OP]      = &&do_sb,       [SC_OP]    = &&do_sc,
         [RDHWR_OP]   = &&do_rdhwr,
     };
     static const void *secondary[] = {
@@ -73,16 +74,8 @@ do_branch:
     goto *branch[
         (cir >> RT_SHIFT) & RT_MASK];
 
-#ifndef   __DISASSEMBLE__
-#define X(type, formatter, impl, opcode, name)                  \
-    do_ ## name:                                                \
-    {                                                           \
-        type                                                    \
-        impl                                                    \
-        INCREMENT_PC;                                           \
-        DISPATCH;                                               \
-    }
-#else  // __DISASSEMBLE__
+
+#if    defined(__DISASSEMBLE__)
 #define X(type, formatter, impl, opcode, name)                  \
     do_ ## name:                                                \
     {                                                           \
@@ -92,12 +85,31 @@ do_branch:
         formatter(#name)                                        \
         DISPATCH;                                               \
     }
-#endif // __DISASSEMBLE__
+#elif  defined(__PROFILE__)
+#define X(type, formatter, impl, opcode, name)                  \
+    do_ ## name:                                                \
+    {                                                           \
+        PROFILE_ENTER_INSTRUCTION                               \
+        type                                                    \
+        impl                                                    \
+        PROFILE_EXIT_INSTRUCTION                                \
+        INCREMENT_PC;                                           \
+        DISPATCH;                                               \
+    }
+#else
+#define X(type, formatter, impl, opcode, name)                  \
+    do_ ## name:                                                \
+    {                                                           \
+        type                                                    \
+        impl                                                    \
+        INCREMENT_PC;                                           \
+        DISPATCH;                                               \
+    }
+#endif
 
     __INSTRUCTIONS
 
 #undef X
-
 }
 
 #ifndef __MACRO_EXPANSION__
@@ -117,8 +129,14 @@ int main(int argc, char **argv) {
     /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
 
+#ifdef    __PROFILE__
+    PROFILE_ENTER_INTERPRETER
+#endif // __PROFILE__
     /* interpret the loaded binary */
     interpreter_computed_goto(&mips, &memory);
+#ifdef    __PROFILE__
+    PROFILE_EXIT_INTERPRETER
+#endif // __PROFILE__
 
     /* clean up */
     memory_delete(&memory);

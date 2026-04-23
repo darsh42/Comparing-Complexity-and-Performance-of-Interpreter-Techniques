@@ -20,7 +20,7 @@
 #include "memory.h"
 #include "loader.h"
 
-/* contains templates to construct instructions */
+#include "benchmark.h"
 #include "instructions.h"
 
 /* instruction generation */
@@ -42,22 +42,31 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
          * and branch categories respectively
          * */
 
-#ifdef __DISASSEMBLE__
-#define X(type, formatter, impl, value, name)  \
-        case value: {                          \
-            type                               \
-            impl                               \
-            formatter(#name)                   \
-            break;                             \
+#if    defined(__DISASSEMBLE__)
+#define X(type, formatter, impl, value, name)                                           \
+        case value: {                                                                   \
+            type                                                                        \
+            impl                                                                        \
+            formatter(#name)                                                            \
+            break;                                                                      \
         }
-#else // __DISASSEMBLE__
-#define X(type, formatter, impl, value, name)  \
-        case value: {                          \
-            type                               \
-            impl                               \
-            break;                             \
+#elif  defined(__PROFILE__)
+#define X(type, formatter, impl, value, name)                                           \
+        case value: {                                                                   \
+            PROFILE_ENTER_INSTRUCTION                                                   \
+            type                                                                        \
+            impl                                                                        \
+            PROFILE_EXIT_INSTRUCTION                                                    \
+            break;                                                                      \
         }
-#endif // __DISASSEMBLE__
+#else
+#define X(type, formatter, impl, value, name)                                           \
+        case value: {                                                                   \
+            type                                                                        \
+            impl                                                                        \
+            break;                                                                      \
+        }
+#endif
 
         /* process opcode */
         switch((cir >> OP_SHIFT) & OP_MASK) {
@@ -92,7 +101,6 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
         break;
         }
 #undef X
-
         INCREMENT_PC;
     }
 }
@@ -108,16 +116,17 @@ int main(int argc, char **argv) {
     struct mips   mips   = {};
     struct memory memory = {};
 
-    /* handle any explicit object creation */
     memory_create(&memory);
-    
-    /* load elf into memory */
     loader_elf(&mips, &memory, *++argv);
-
-    /* process the interpreter loop */
+    
+#ifdef    __PROFILE__
+    PROFILE_ENTER_INTERPRETER
+#endif // __PROFILE__
     interpreter_switch(&mips, &memory);
+#ifdef    __PROFILE__
+    PROFILE_EXIT_INTERPRETER
+#endif // __PROFILE__
 
-    /* clean up */
     memory_delete(&memory);
 
     return mips.status;

@@ -133,12 +133,6 @@ enum MIPS_REG {
 #undef  X
 };
 
-enum MIPS_SYSCALL {
-#define X(e, v, _) e = v,
-    __SYSCALLS
-#undef  X
-};
-
 enum branch_delay { 
      UNUSED, TRANSFER, DELAY
 };
@@ -160,12 +154,6 @@ struct mips {
 static const char *register_names[] = {
 #define X(n, _, s) [n] = s,
     __REGS
-#undef  X
-};
-
-static const char *syscall_names[] = {
-#define X(n, _, s) [n] = s,
-    __SYSCALLS
 #undef  X
 };
 
