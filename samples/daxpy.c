@@ -39,11 +39,9 @@ int main(void) {
         }
     }
 
-#if 0
     printf("%s", 
         (result) ? "FAILED: AXPY\n": 
                    "PASSED: AXPY\n");
-#endif
 
     return result;
 }

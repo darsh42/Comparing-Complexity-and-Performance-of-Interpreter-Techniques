@@ -16,7 +16,7 @@ target_compile_options(compile-flags
     -static
     -fno-pie
     -Wall 
-    -g
+    -O2
     -mfp32
     -march=r3000
     -mexplicit-relocs
@@ -44,9 +44,11 @@ add_executable(crc           ${CMAKE_CURRENT_SOURCE_DIR}/crc.c)
 add_executable(daxpy         ${CMAKE_CURRENT_SOURCE_DIR}/daxpy.c)
 add_executable(linked_list   ${CMAKE_CURRENT_SOURCE_DIR}/linked_list.c)
 add_executable(quicksort     ${CMAKE_CURRENT_SOURCE_DIR}/quicksort.c)
+add_executable(dhrystone     ${CMAKE_CURRENT_SOURCE_DIR}/dhrystone.c)
 
 target_link_libraries(binary_search PRIVATE compile-flags)
 target_link_libraries(crc           PRIVATE compile-flags)
 target_link_libraries(daxpy         PRIVATE compile-flags)
 target_link_libraries(linked_list   PRIVATE compile-flags)
 target_link_libraries(quicksort     PRIVATE compile-flags)
+target_link_libraries(dhrystone     PRIVATE compile-flags)
