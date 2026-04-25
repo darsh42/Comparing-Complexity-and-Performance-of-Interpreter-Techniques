@@ -42,11 +42,10 @@ typedef struct block {
         formatter(#name)                                               \
         implementation                                                 \
         mips->r[MIPS_R_PC] += 4;                                       \
-        if (next.op) {                                                 \
-            __attribute__((musttail))                                  \
-            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
-        }                                                              \
-        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
+        if (!next.op)                                                  \
+            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
+        else                                                           \
+            next.op(next.cir, mips,  memory, *rest, rest+1);           \
     }
 #elif  defined(__PROFILE__)
 #define X(prologue, formatter, implementation, value, name)            \
@@ -54,15 +53,14 @@ typedef struct block {
                                  struct mips   * restrict mips,        \
                                  struct memory * restrict memory,      \
                                  op_t next, op_t * restrict rest) {    \
-        PROFILE_ENTER_INSTRUCTION                               \
+        PROFILE_ENTER_INSTRUCTION                                      \
         prologue                                                       \
         implementation                                                 \
-        PROFILE_EXIT_INSTRUCTION                                \
-        if (next.op) {                                                 \
-            __attribute__((musttail))                                  \
-            return next.op(next.cir, mips,  memory, *rest, rest+1);    \
-        }                                                              \
-        mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                     \
+        PROFILE_EXIT_INSTRUCTION                                       \
+        if (!next.op)                                                  \
+            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
+        else                                                           \
+            next.op(next.cir, mips,  memory, *rest, rest+1);           \
     }
 #else
 #define X(prologue, formatter, implementation, value, name)            \
@@ -274,10 +272,6 @@ complete:
 
 void interpreter_blocked(struct mips   * restrict mips,
                          struct memory * restrict memory) {
-#ifdef __PROFILE_INTERPRETER__
-    CALLGRIND_START_INSTRUMENTATION;
-#endif // __PROFILE_INTERPRETER
-    
     block_t *blocks = NULL, *previous = NULL;
 
     while (!mips->halted) {
@@ -338,10 +332,6 @@ void interpreter_blocked(struct mips   * restrict mips,
         free(b->ops);
         free(b);
     }
-
-#ifdef __PROFILE_INTERPRETER__
-    CALLGRIND_STOP_INSTRUMENTATION;
-#endif // __PROFILE_INTERPRETER
 }
 
 #ifndef __MACRO_EXPANSION__
