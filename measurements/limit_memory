@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+MEMORY_LIMIT=$1
+
+shift
+
+exec systemd-run --user --scope -p MemoryMax=$MEMORY_LIMIT "$@"
