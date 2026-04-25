@@ -136,6 +136,8 @@ void loader_load_segments(struct memory *memory, FILE *elf,
             memory_set(memory, phdr.p_vaddr+phdr.p_filesz, 
                                phdr.p_memsz-phdr.p_filesz, 0);
         }
+
+        free(buffer);
     }
     return;
 err:
