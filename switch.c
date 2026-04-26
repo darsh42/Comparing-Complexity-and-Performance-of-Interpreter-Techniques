@@ -73,9 +73,9 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
         /*  PRIMARY INSTRUCTION BLOCK */
         __INSTRUCTIONS_PRIMARY
         default:
-            fprintf(stderr, "instruction: %08x: 0x%08x\n", 
+            fprintf(stderr, "Unknown primary instruction: %08x: 0x%08x\n", 
                     mips->r[MIPS_R_PC], cir);
-            assert(0 && "Unknown primary instruction");
+            abort();
 
     
         /* SECONDARY INSTRUCTION BLOCK */
@@ -83,9 +83,9 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
         switch((cir >> FN_SHIFT) & FN_MASK) {
         __INSTRUCTIONS_SECONDARY
         default:
-            fprintf(stderr, "instruction: %08x: 0x%08x\n", 
+            fprintf(stderr, "Unknown secondary instruction: %08x: 0x%08x\n", 
                     mips->r[MIPS_R_PC], cir);
-            assert(0 && "Unknown secondary instruction");
+            abort();
         }
         break;
 
@@ -94,9 +94,9 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
         switch((cir >> RT_SHIFT) & RT_MASK) {
         __INSTRUCTIONS_BRANCH
         default:
-            fprintf(stderr, "instruction: %08x: 0x%08x\n", 
+            fprintf(stderr, "Unknown branch instruction: %08x: 0x%08x\n", 
                     mips->r[MIPS_R_PC], cir);
-            assert(0 && "Unknown branch instruction");
+            abort();
         }
         break;
         }
