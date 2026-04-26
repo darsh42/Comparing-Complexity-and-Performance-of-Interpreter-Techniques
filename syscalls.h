@@ -7,6 +7,8 @@
  */
 static inline void mips_syscall_exit(struct mips *mips, struct memory *memory,
                                      u32 status, u32 _a1, u32 _a2, u32 _a3) {
+    (void) _a1; (void) _a2; (void) _a3;
+
     mips->status = status;
     mips->halted = 1;
 }
@@ -354,6 +356,8 @@ static inline void mips_syscall_exit_group(struct mips *mips, struct memory *mem
  */
 static inline void mips_syscall_set_thread_area(struct mips *mips, struct memory *memory,
                                                 u32 addr, u32 _a1, u32 _a2, u32 _a3) {
+    (void) _a1; (void) _a2; (void) _a3;
+
     // Custom field in your struct
     mips->user_local_ptr = addr;
     mips->r[MIPS_R_V0] = 0;      // Success
@@ -368,6 +372,8 @@ static inline void mips_syscall_set_thread_area(struct mips *mips, struct memory
  */
 static inline void mips_syscall_tid_addr(struct mips *mips, struct memory *memory,
                                          u32 tidptr, u32 _a1, u32 _a2, u32 _a3) {
+    (void) _a1; (void) _a2; (void) _a3;
+
     // store the tidptr
     mips->tidptr = tidptr;
     // Since running a single process, returning '1' is standard.

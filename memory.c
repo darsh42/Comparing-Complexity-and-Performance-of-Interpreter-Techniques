@@ -1,59 +1,5 @@
 #include "memory.h"
 
-void memory_read(memory_t *memory, u32 address, void *data, u32 size) {
-    assert(memory && data);
-
-    // get table index, entry index and offset
-    u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-    u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-    u32 offset = address & OFFSET_MASK;
-
-    // find table
-    page_table_t *table = memory->page_tables[pt_idx];
-    assert(table && "[memory_read]: invalid read\n");
-
-    // find entry
-    page_entry_t  entry = table->page_entries[pe_idx];
-    assert(entry && "[memory_read]: invalid read\n");
-
-    // compute source location
-    u8 *source = (u8 *)entry + offset;
-
-    // perform read
-    switch (size) {
-    case 4: *(u32 *)data = *(u32 *)source; return;
-    case 2: *(u16 *)data = *(u16 *)source; return;
-    case 1: *(u8  *)data = *(u8  *)source; return;
-    }
-}
-
-void memory_write(struct memory *memory, u32 address, u32 data, u32 size) {
-    assert(memory);
-
-    // get table index, entry index and offset
-    u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-    u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-    u32 offset = address & OFFSET_MASK;
-
-    // find table
-    page_table_t *table = memory->page_tables[pt_idx];
-    assert(table && "[memory_read]: invalid write\n");
-
-    // find entry
-    page_entry_t  entry = table->page_entries[pe_idx];
-    assert(entry && "[memory_read]: invalid write\n");
-
-    // compute destination location
-    u8 *destination = (u8 *)entry + offset;
-
-    // perform read
-    switch (size) {
-    case 4: *(u32 *) destination = data; return;
-    case 2: *(u16 *) destination = data; return;
-    case 1: *(u8  *) destination = data; return;
-    }
-}
-
 void memory_allocate(memory_t *memory, u32 address, u32 size) {
     /*
      * page boundaries:
@@ -81,8 +27,10 @@ void memory_allocate(memory_t *memory, u32 address, u32 size) {
         if (!table) {
             /* allocate a new table entry */
             table = calloc(1, sizeof(page_table_t));
-            assert(table && 
-                "failed to allocate table");
+            if (!table) {
+                fprintf(stderr, "failed to allocate table");
+                goto err;
+            }
             memory->page_tables[pt_idx] = table;
         }
 
@@ -108,74 +56,60 @@ void memory_allocate(memory_t *memory, u32 address, u32 size) {
             if (!entry) {
                 /* allocate a new page entry */
                 entry = calloc(1, 1 << PE_SHIFT);
-                assert(entry && 
-                    "failed to allocate page");
+                if (!entry) {
+                    fprintf(stderr, "failed to allocate page\n");
+                    goto err;
+                }
                 table->page_entries[pe_idx] = entry;
             }
         }
     }
+
+    return;
+
+err:
+    abort();
 }
 
 void memory_copy_read(memory_t *memory, u32 address, u32 size, void *buffer) {
     u8* _buffer = buffer;
     while (size) {
-        // get table index, entry index and offset
-        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-        u32 offset =  address & OFFSET_MASK;
+        /* pointer to memory location */
+        u8* location = memory_find_page(memory, address);
 
-        // find table
-        page_table_t *table = memory->page_tables[pt_idx];
-        if (!table) {
-            // handle error
-            assert(0);
-        }
-
-        // find entry
-        page_entry_t  entry = table->page_entries[pe_idx];
-        if (!entry) {
-            // handle error
-            assert(0);
-        }
-
+        /* calculate amount of bytes to copy in this page */
+        u32 offset = address & OFFSET_MASK;
         u32 amount = (size < OFFSET_MASK+1 - offset) ?
             size: OFFSET_MASK+1 - offset;
 
-        memcpy(_buffer, (u8 *)entry+offset, amount);
+        memcpy(_buffer, location, amount);
 
+        /* increment to next page */
         address += amount;
         _buffer += amount;
         size    -= amount;
     }
+
+    return;
+
+err:
+    abort();
 }
 
 void memory_copy_write(memory_t *memory, u32 address, u32 size, void *buffer) {
     u8* _buffer = buffer;
     while (size) {
-        // get table index, entry index and offset
-        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-        u32 offset =  address & OFFSET_MASK;
+        /* pointer to memory location */
+        u8* location = memory_find_page(memory, address);
 
-        // find table
-        page_table_t *table = memory->page_tables[pt_idx];
-        if (!table) {
-            // handle error
-            assert(0);
-        }
-
-        // find entry
-        page_entry_t  entry = table->page_entries[pe_idx];
-        if (!entry) {
-            // handle error
-            assert(0);
-        }
-
+        /* calculate amount of bytes to copy in this page */
+        u32 offset = address & OFFSET_MASK;
         u32 amount = (size < OFFSET_MASK+1 - offset) ?
             size: OFFSET_MASK+1 - offset;
 
-        memcpy((u8 *)entry+offset, _buffer, amount);
+        memcpy(location, _buffer, amount);
 
+        /* increment to next page */
         address += amount;
         _buffer += amount;
         size    -= amount;
@@ -184,30 +118,17 @@ void memory_copy_write(memory_t *memory, u32 address, u32 size, void *buffer) {
 
 void memory_set(memory_t *memory, u32 address, u32 size, u32 value) {
     while (size) {
-        // get table index, entry index and offset
-        u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
-        u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-        u32 offset =  address & OFFSET_MASK;
+        /* pointer to memory location */
+        u8* location = memory_find_page(memory, address);
 
-        // find table
-        page_table_t *table = memory->page_tables[pt_idx];
-        if (!table) {
-            // handle error
-            assert(0);
-        }
-
-        // find entry
-        page_entry_t  entry = table->page_entries[pe_idx];
-        if (!entry) {
-            // handle error
-            assert(0);
-        }
-
+        /* calculate amount of bytes to copy in this page */
+        u32 offset = address & OFFSET_MASK;
         u32 amount = (size < OFFSET_MASK+1 - offset) ?
             size: OFFSET_MASK+1 - offset;
 
-        memset((u8 *)entry+offset, value, amount);
+        memset(location, value, amount);
 
+        /* increment to next page */
         address += amount;
         size    -= amount;
     }

@@ -19,64 +19,132 @@
  *******************************************/
 
 void loader_load_ehdr(FILE *elf, Elf32_Ehdr **ehdr) {
-    assert((*ehdr = malloc(sizeof(Elf32_Ehdr))));
-    assert(fread(*ehdr, 1, sizeof(Elf32_Ehdr), elf) 
-        == sizeof(Elf32_Ehdr));
-    assert((*ehdr)->e_machine == EM_MIPS &&
-            "only support MIPS elf");
-    assert((*ehdr)->e_ident[EI_CLASS] == ELFCLASS32 &&
-            "only support 32-bit elf");
-    assert((*ehdr)->e_ident[EI_DATA] == ELFDATA2LSB &&
-            "only support little endian");
-    assert((*ehdr)->e_type == ET_EXEC &&
-            "only support executable elf");
+    /* allocate elf header */
+    *ehdr = malloc(sizeof(Elf32_Ehdr));
+    if (!*ehdr) { 
+        fprintf(stderr, "Unable to allocate elf header\n"); goto err;
+    }
+
+    /* read elf header */
+    size_t read = fread(*ehdr, 1, sizeof(Elf32_Ehdr), elf);
+    if (read != sizeof(Elf32_Ehdr)) { 
+        fprintf(stderr, "Unable to read elf header\n"); goto err; 
+    }
+
+    if ((*ehdr)->e_machine         != EM_MIPS)     { fprintf(stderr, "Only support MIPS elf\n");       goto err; }
+    if ((*ehdr)->e_ident[EI_CLASS] != ELFCLASS32)  { fprintf(stderr, "only support 32-bit elf\n");     goto err; }
+    if ((*ehdr)->e_ident[EI_DATA]  != ELFDATA2LSB) { fprintf(stderr, "only support little endian\n");  goto err; }
+    if ((*ehdr)->e_type            != ET_EXEC)     { fprintf(stderr, "only support executable elf\n"); goto err; }
+    
+    return;
+
+err:
+    abort();
 }
 
 void loader_load_phdr(FILE *elf, Elf32_Ehdr *ehdr, 
                       Elf32_Phdr **phdr) {
+    size_t ret = -1;
+
     size_t size_phdrs = 
         sizeof(Elf32_Phdr) * ehdr->e_phnum;
-    assert((*phdr = malloc(size_phdrs)) &&
-            "Couldn't allocate memory for program headers");
-    assert(fseek(elf, ehdr->e_phoff, SEEK_SET) == 0 &&
-            "Couldn't seek to program header start");
-    assert(fread(*phdr, 1, size_phdrs, elf) == size_phdrs &&
-            "Couldn't read program headers");
+
+    *phdr = malloc(size_phdrs);
+    if (!*phdr) {
+        fprintf(stderr, "Couldn't allocate memory for program headers\n");
+        goto err;
+    }
+
+    ret = fseek(elf, ehdr->e_phoff, SEEK_SET);
+    if (ret != 0) {
+        fprintf(stderr, "Couldn't seek to program header start\n");
+        goto err;
+    }
+
+    ret = fread(*phdr, 1, size_phdrs, elf);
+    if (ret != size_phdrs) {
+        fprintf(stderr, "Couldn't read program headers\n");
+        goto err;
+    }
+
+    return;
+
+err:
+    abort();
 }
 
 void loader_load_shdr(FILE *elf, Elf32_Ehdr *ehdr, 
                       Elf32_Shdr **shdr) {
+    size_t ret = -1;
+
     size_t size_shdrs = 
         sizeof(Elf32_Shdr) * ehdr->e_shnum;
-    assert((*shdr = malloc(size_shdrs)) &&
-            "Couldn't allocate memory for section headers");
-    assert(fseek(elf, ehdr->e_shoff, SEEK_SET) == 0 &&
-            "Couldn't seek to section header start");
-    assert(fread(*shdr, 1, size_shdrs, elf) == size_shdrs &&
-            "Couldn't read section headers");
+
+    *shdr = malloc(size_shdrs);
+    if (!*shdr) {
+        fprintf(stderr, "Couldn't allocate memory for section headers\n");
+        goto err;
+    }
+
+    ret = fseek(elf, ehdr->e_shoff, SEEK_SET);
+    if (ret != 0) {
+        fprintf(stderr, "Couldn't seek to section header start\n");
+        goto err;
+    }
+
+    ret = fread(*shdr, 1, size_shdrs, elf);
+    if (ret != size_shdrs) {
+        fprintf(stderr, "Couldn't read section headers\n");
+        goto err;
+    }
+
+    return;
+
+err:
+    abort();
 }
 
 void loader_load_symbols(FILE *elf, 
                          Elf32_Sym **symbols, Elf32_Shdr symtab_hdr, 
                          char      **strings, Elf32_Shdr strtab_hdr) {
+    size_t ret = -1;
+
     /* allocate symbols and strings */
     *symbols = malloc(symtab_hdr.sh_size);
     *strings = malloc(strtab_hdr.sh_size);
 
-    assert(*symbols && *strings &&
-        "Couldn't allocate memory for symbols or strings");
+    if (!*symbols || !*strings) {
+        fprintf(stderr, "Couldn't allocate memory for symbols or strings\n");
+        goto err;
+    }
 
     /* read symbols */
-    assert(fseek(elf, symtab_hdr.sh_offset, SEEK_SET) == 0 &&
-            "Couldn't seek to symbol section start");
-    assert(fread(*symbols, 1, symtab_hdr.sh_size, elf) == symtab_hdr.sh_size &&
-            "Couldn't read symbol section");
+    ret = fseek(elf, symtab_hdr.sh_offset, SEEK_SET);
+    if (ret != 0) {
+        fprintf(stderr, "Couldn't seek to symbol section start\n");
+        goto err;
+    }
+    ret = fread(*symbols, 1, symtab_hdr.sh_size, elf);
+    if (ret != symtab_hdr.sh_size) {
+        fprintf(stderr, "Couldn't read symbol section\n");
+        goto err;
+    }
 
     /* read strings */
-    assert(fseek(elf, strtab_hdr.sh_offset, SEEK_SET) == 0 &&
-            "Couldn't seek to string section start");
-    assert(fread(*strings, 1, strtab_hdr.sh_size, elf) == strtab_hdr.sh_size &&
-            "Couldn't read string section");
+    ret = fseek(elf, strtab_hdr.sh_offset, SEEK_SET);
+    if (ret != 0) {
+        fprintf(stderr, "Couldn't seek to string section start\n");
+        goto err;
+    }
+    ret = fread(*strings, 1, strtab_hdr.sh_size, elf);
+    if (ret != strtab_hdr.sh_size) {
+        fprintf(stderr, "Couldn't read string section\n");
+        goto err;
+    }
+
+    return;
+err:
+    abort();
 }
 
 void loader_load_segments(struct memory *memory, FILE *elf, 
@@ -89,17 +157,13 @@ void loader_load_segments(struct memory *memory, FILE *elf,
         }
 
         // check if address lower than heap
-        if (phdr.p_vaddr + phdr.p_memsz > 
-                memory->brk_heap_start) {
-            memory->brk_heap_start = 
-                phdr.p_vaddr + phdr.p_memsz;
-            memory->brk_heap_end   = 
-                phdr.p_vaddr + phdr.p_memsz;
+        if (phdr.p_vaddr + phdr.p_memsz > memory->brk_heap_start) {
+            memory->brk_heap_start = phdr.p_vaddr + phdr.p_memsz;
+            memory->brk_heap_end   = phdr.p_vaddr + phdr.p_memsz;
         }
 
         // allocate guest memory
-        memory_allocate(memory, phdr.p_vaddr, 
-                                phdr.p_memsz);
+        memory_allocate(memory, phdr.p_vaddr, phdr.p_memsz);
         
         // seek to segment
         u32 rseek  = 
@@ -139,9 +203,11 @@ void loader_load_segments(struct memory *memory, FILE *elf,
 
         free(buffer);
     }
+
     return;
+
 err:
-    assert(0);
+    abort();
 }
 
 void loader_load_pc(struct mips *mips, struct memory *memory, FILE *elf, 
@@ -190,8 +256,15 @@ void loader_load_gp(struct mips *mips, struct memory *memory, FILE *elf,
         free(strings);
     }
 
-    assert(loaded_gp &&
-        "_gp or __gnu_local_gp not found!");
+
+    if (!loaded_gp) {
+        fprintf(stderr, "_gp or __gnu_local_gp not found!");
+        goto err;
+    }
+
+    return;
+err:
+    abort();
 }
 
 void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf, 
@@ -247,7 +320,7 @@ void loader_load_sp(struct mips *mips, struct memory *memory, FILE *elf,
 void loader_elf(struct mips   *mips, 
                 struct memory *memory, 
                 const char *elffile) {
-    FILE *elf = NULL;
+    FILE *elf        = NULL;
     Elf32_Ehdr *ehdr = NULL;
     Elf32_Phdr *phdr = NULL;
     Elf32_Shdr *shdr = NULL;
@@ -255,7 +328,11 @@ void loader_elf(struct mips   *mips,
     assert(memory);
     assert(elffile);
     
-    assert((elf = fopen(elffile, "rb")));
+    elf = fopen(elffile, "rb");
+    if (!elf) {
+        fprintf(stderr, "Unable to open elf\n");
+        goto err;
+    }
     
     loader_load_ehdr(
         elf, &ehdr);
@@ -282,4 +359,9 @@ void loader_elf(struct mips   *mips,
     free(shdr);
     free(phdr);
     free(ehdr);
+
+    return;
+
+err:
+    abort();
 }

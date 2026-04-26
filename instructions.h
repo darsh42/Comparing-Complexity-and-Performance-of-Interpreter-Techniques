@@ -320,11 +320,12 @@
     case __NR_set_tid_address: mips_syscall_tid_addr(mips, memory, a0, a1, a2, a3);        break; \
     case __NR_set_thread_area: mips_syscall_set_thread_area(mips, memory, a0, a1, a2, a3); break; \
     default:                                                                                      \
-        fprintf(stderr, "Unhandled Syscall: %d\n", v0);                                           \
-        assert(0 && "unknown syscall");                                                           \
+        fprintf(stderr, "Unhandled Syscall: %d\n", v0); abort();                                  \
     }
-#define ITP_BRK_IMPL     (void) imm20; \
-    assert(0 && "illegal instruction brk");
+#define ITP_BRK_IMPL (void) imm20;                       \
+    (void) imm20; (void) v0; (void) a0;                  \
+    (void) a1;    (void) a2; (void) a3;                  \
+    fprintf(stderr, "Illegal Instruction BRK"); abort();
 
 #define ITP_MFHI_IMPL mips->r[rd] = mips->r[MIPS_R_HI];
 #define ITP_MFLO_IMPL mips->r[rd] = mips->r[MIPS_R_LO];
@@ -487,7 +488,7 @@
 #define ITP_LWL_IMPL /* TODO: */                  \
     u32 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;           \
-    memory_read(memory, address & ~0x3, &read, 2);\
+    memory_read_u16(memory, address & ~0x3, &read);\
     if (mips->load_d != rt) {                     \
         ITP_LOAD_DELAY                            \
     }                                             \
@@ -495,7 +496,7 @@
 #define ITP_LWR_IMPL /* TODO: */                  \
     u32 read = 0;                                 \
     u32 address = LOAD_COMPUTE_ADDRESS;           \
-    memory_read(memory, address & ~0x3, &read, 2);\
+    memory_read_u16(memory, address & ~0x3, &read);\
     if (mips->load_d != rt) {                     \
         ITP_LOAD_DELAY                            \
     }                                             \
@@ -531,7 +532,7 @@
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     u32 shift   = (address & 3) << 3;            \
     u32 mask    = 0xffffffff >> (shift);         \
-    memory_read(memory, address & ~3, &read, 4); \
+    memory_read_u32(memory, address & ~3, &read);\
     mips->r[rt] = (mips->r[rt] & ~mask) |        \
                   (read >> (shift));
 #define ITP_LWL_IMPL                             \
@@ -539,7 +540,7 @@
     u32 address = LOAD_COMPUTE_ADDRESS;          \
     u32 shift   = (address & 3) << 3;            \
     u32 mask    = 0xffffffff << (24 - shift);    \
-    memory_read(memory, address & ~3, &read, 4); \
+    memory_read_u32(memory, address & ~3, &read); \
     mips->r[rt] = (mips->r[rt] & ~mask) |        \
                   (read << (24-shift));
 #endif // LOAD_DELAY_ENABLE
@@ -551,8 +552,8 @@
 #define ITP_SW_IMPL  memory_write_u32(memory, STORE_COMPUTE_ADDRESS, value_rt);
 
 /* TODO: */
-#define ITP_SWL_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
-#define ITP_SWR_IMPL memory_write(memory, STORE_COMPUTE_ADDRESS, value_rt, 4);
+#define ITP_SWL_IMPL memory_write_u32(memory, STORE_COMPUTE_ADDRESS, value_rt);
+#define ITP_SWR_IMPL memory_write_u32(memory, STORE_COMPUTE_ADDRESS, value_rt);
 
 #define ITP_RDHWR_IMPL                             \
     switch (rd) {                                  \

@@ -31,7 +31,7 @@ typedef struct memory {
 
     u32  brk_heap_start,  brk_heap_end;
     u32 mmap_heap_start, mmap_heap_end;
-}memory_t;
+}__attribute__((aligned(64))) memory_t;
 
 void memory_create(memory_t *memory);
 void memory_delete(memory_t *memory);
@@ -50,19 +50,8 @@ static inline u8 *memory_find_page(memory_t *memory, u32 address) {
     // get table index, entry index and offset
     u32 pt_idx = (address >> PT_SHIFT) & PT_MASK;
     u32 pe_idx = (address >> PE_SHIFT) & PE_MASK;
-    u32 offset = address & OFFSET_MASK;
-
+    u32 offset =  address & OFFSET_MASK;
     return (u8 *)memory->page_tables[pt_idx]->page_entries[pe_idx] + offset;
-    // find table
-    // page_table_t *table = memory->page_tables[pt_idx];
-    // assert(table && "[memory_find_page]: invalid table");
-
-    // find entry
-    // page_entry_t  entry = table->page_entries[pe_idx];
-    // assert(entry && "[memory_find_page]: invalid entry");
-
-    // compute source location
-    // return (u8 *)entry + offset;
 }
 
 static inline void memory_read_u8 (memory_t * restrict memory, u32 address, u8  * restrict destination) {
@@ -83,8 +72,6 @@ static inline void memory_write_u16(memory_t * restrict memory, u32 address, con
 static inline void memory_write_u32(memory_t * restrict memory, u32 address, const u32 data) {
     *(u32 *)memory_find_page(memory, address) = data;
 }
-
-
 
 #endif // __MEMORY_H__
 
