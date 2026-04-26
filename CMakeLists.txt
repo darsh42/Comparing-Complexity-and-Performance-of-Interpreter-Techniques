@@ -37,6 +37,7 @@ add_library(release-flags INTERFACE)
 target_compile_options(release-flags
     INTERFACE
     -O3
+    -flto
     -Wall
     -Wextra
     -Wfloat-equal
@@ -48,8 +49,10 @@ target_compile_options(release-flags
     -Wno-unused-variable
     -Wno-unused-parameter
     -fno-omit-frame-pointer
-    -flto
     -march=native)
+target_link_options(release-flags
+    INTERFACE
+    -flto)
 add_library(debug-flags INTERFACE)
 target_compile_options(debug-flags
     INTERFACE
