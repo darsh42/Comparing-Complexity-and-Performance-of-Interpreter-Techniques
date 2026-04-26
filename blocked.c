@@ -8,12 +8,13 @@
 #include "benchmark.h"
 #include "instructions.h"
 
+#define UNROLL_SIZE 8
+
 typedef struct op op_t;
 
 typedef void (*handler) (u32, 
      struct mips   * restrict, 
-     struct memory * restrict,
-     op_t, op_t * restrict);
+     struct memory * restrict);
 
 typedef struct op {
     u32     cir;
@@ -36,44 +37,29 @@ typedef struct block {
 #define X(prologue, formatter, implementation, value, name)            \
     static void interpret_##name(u32 cir,                              \
                                  struct mips   * restrict mips,        \
-                                 struct memory * restrict memory,      \
-                                 op_t next, op_t * restrict rest) {    \
+                                 struct memory * restrict memory){     \
         prologue                                                       \
         formatter(#name)                                               \
         implementation                                                 \
         mips->r[MIPS_R_PC] += 4;                                       \
-        if (!next.op)                                                  \
-            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
-        else                                                           \
-            next.op(next.cir, mips,  memory, *rest, rest+1);           \
     }
 #elif  defined(__PROFILE__)
 #define X(prologue, formatter, implementation, value, name)            \
     static void interpret_##name(u32 cir,                              \
                                  struct mips   * restrict mips,        \
-                                 struct memory * restrict memory,      \
-                                 op_t next, op_t * restrict rest) {    \
+                                 struct memory * restrict memory){     \
         PROFILE_ENTER_INSTRUCTION                                      \
         prologue                                                       \
         implementation                                                 \
         PROFILE_EXIT_INSTRUCTION                                       \
-        if (!next.op)                                                  \
-            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
-        else                                                           \
-            next.op(next.cir, mips,  memory, *rest, rest+1);           \
     }
 #else
 #define X(prologue, formatter, implementation, value, name)            \
     static void interpret_##name(u32 cir,                              \
                                  struct mips   * restrict mips,        \
-                                 struct memory * restrict memory,      \
-                                 op_t next, op_t * restrict rest) {    \
+                                 struct memory * restrict memory){     \
         prologue                                                       \
         implementation                                                 \
-        if (!next.op)                                                  \
-            mips->r[MIPS_R_PC] = mips->r[MIPS_R_NNPC];                 \
-        else                                                           \
-            next.op(next.cir, mips,  memory, *rest, rest+1);           \
     }
 #endif
 
@@ -293,7 +279,7 @@ void interpreter_blocked(struct mips   * restrict mips,
         if (previous != NULL && !previous->indirect) {
             previous->next[mips->branched] = current;
         }
-        
+
         do {
 #ifndef    __DISASSEMBLE__
             // if not disassembling, pre-increment
@@ -306,20 +292,26 @@ void interpreter_blocked(struct mips   * restrict mips,
             op_t     *ops  = current->ops;
             block_t **link = current->next;
 
-            // get first instruction
-            handler op =  ops->op;
-            u32     cir = ops->cir;
-            
-            // get next
-            op_t next  = *(ops+1);
-
             // prefetch next blocks
             __builtin_prefetch(link[0], 0, 1);
             __builtin_prefetch(link[1], 0, 1);
 
-            // process instructions
-            op(cir, mips, memory, next, ops+2);
+            switch((current->size-1)% UNROLL_SIZE) {
+                case 0: do {
+                case 8: ops->op(ops->cir, mips, memory); ops++;
+                case 7: ops->op(ops->cir, mips, memory); ops++;
+                case 6: ops->op(ops->cir, mips, memory); ops++;
+                case 5: ops->op(ops->cir, mips, memory); ops++;
+                case 4: ops->op(ops->cir, mips, memory); ops++;
+                case 3: ops->op(ops->cir, mips, memory); ops++;
+                case 2: ops->op(ops->cir, mips, memory); ops++;
+                case 1: ops->op(ops->cir, mips, memory); ops++;
+                } while(ops->op);
+            }
 
+            mips->r[MIPS_R_PC] = 
+                mips->r[MIPS_R_NNPC];
+    
             // set new block pointers
             previous = current;
             current  = link[mips->branched];
