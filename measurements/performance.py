@@ -10,12 +10,12 @@ from parallel import parallel_execute
 RUNS    = "100"
 BUILD   = Path("./../build")
 RESULTS = Path("./../build/measurements")
-PCORES = [0, 2, 4, 6, 8, 10]
+PCORES = [0, 2]
 BENCHMARKS = {"DAXPY":  BUILD / "samples/daxpy",
               "LL":     BUILD / "samples/linked_list",
               "QS":     BUILD / "samples/quicksort",
-              "BS":     BUILD / "samples/binary_search",
               "CRC":    BUILD / "samples/crc",
+              "BS":     BUILD / "samples/binary_search",
               "NPB IS": BUILD / "samples/bin/is.W.x"}
 ENGINES    = {"SC":     BUILD / "switch",
               "TC":     BUILD / "tail-call",
@@ -26,6 +26,8 @@ CMD  = lambda core, interpreter, workload: ["perf", "stat", "-x", ",",
                                                             "taskset", "-c", str(core), 
                                                                              str(interpreter), 
                                                                              str(workload)]
+
+RESULTS.mkdir(exist_ok=True)
 
 # Environment Management
 ASLR_ORIG = ""
