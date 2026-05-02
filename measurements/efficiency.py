@@ -11,12 +11,12 @@ if not PINROOT:
 
 BUILD   = Path("./../build")
 RESULTS = Path("./../build/measurements")
-ECORES = [12, 13, 14]
+ECORES = [12, 13]
 BENCHMARKS = {"DAXPY":  BUILD / "samples/daxpy",
               "LL":     BUILD / "samples/linked_list",
               "QS":     BUILD / "samples/quicksort",
-              "BS":     BUILD / "samples/binary_search",
               "CRC":    BUILD / "samples/crc",
+              "BS":     BUILD / "samples/binary_search",
               "NPB IS": BUILD / "samples/bin/is.W.x"}
 ENGINES    = {"SC":     BUILD / "profile_switch",
               "TC":     BUILD / "profile_tail-call",
@@ -28,6 +28,8 @@ COMMAND = lambda core, interpreter, workload: ['taskset', '-c', str(core),
                                                    '-t', '../pintool/obj-intel64/InterpreterEfficiency.so', 
                                                    '--', str(interpreter), str(workload)]
 
+RESULTS.mkdir(exist_ok=True)
+
 def process_efficiency(data, filename=str(RESULTS / 'efficiency.csv')):
     processed = []
     for entry in data:
@@ -38,7 +40,7 @@ def process_efficiency(data, filename=str(RESULTS / 'efficiency.csv')):
         if (raw := re.search(r'Data:([^\r\n]+)', results)):
             processed.append([engine, benchmark] + raw.group(1).strip().split(','))
 
-    headers = ['Engine', 'Benchmarks', 'Processing Instructions', 
+    headers = ['Engine', 'Benchmark', 'Processing Instructions', 
                'Dispatching Instructions', 'Interpreter Efficiency']
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
