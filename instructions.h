@@ -40,108 +40,107 @@
 #define ITP_FORMAT_NONE(name)
 #define ITP_FORMAT_SHIFT_IMM(name)                                  \
     printf("  %x:\t%08x\t%s %s, %s, 0x%02x\n", mips->r[MIPS_R_PC],  \
-                                               cir, \
+                                               cir,                 \
                                                name,                \
                                                register_names[rd],  \
                                                register_names[rt],  \
                                                sh);
 #define ITP_FORMAT_SHIFT_REG(name)                              \
     printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
-                                           cir, \
+                                           cir,                 \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_JR(name)                             \
     printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
-                                   cir, \
+                                   cir,                 \
                                    name,                \
                                    register_names[rs]);
-#define ITP_FORMAT_JALR(name)              \
+#define ITP_FORMAT_JALR(name)                                \
     printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
-                                        cir, \
+                                        cir,                 \
                                         name,                \
                                         register_names[rd],  \
                                         register_names[rs]);
 #define ITP_FORMAT_MF(name)                             \
     printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
-                                   cir, \
+                                   cir,                 \
                                    name,                \
                                    register_names[rd]);
 #define ITP_FORMAT_MT(name)                             \
     printf("  %x:\t%08x\t%s %s\n", mips->r[MIPS_R_PC],  \
-                                   cir, \
+                                   cir,                 \
                                    name,                \
                                    register_names[rs]);
 #define ITP_FORMAT_SYSCALL(name)                            \
     printf("  %x:\t%08x\t%s imm20\n",  mips->r[MIPS_R_PC],  \
-                                       cir, \
+                                       cir,                 \
                                        name);
-
-#define ITP_FORMAT_MULT_DIV(name)          \
+#define ITP_FORMAT_MULT_DIV(name)                            \
     printf("  %x:\t%08x\t%s %s, %s\n",  mips->r[MIPS_R_PC],  \
-                                        cir, \
+                                        cir,                 \
                                         name,                \
                                         register_names[rs],  \
                                         register_names[rt]);
-#define ITP_FORMAT_ALU_REG(name)               \
+#define ITP_FORMAT_ALU_REG(name)                                \
     printf("  %x:\t%08x\t%s %s, %s, %s\n", mips->r[MIPS_R_PC],  \
-                                           cir, \
+                                           cir,                 \
                                            name,                \
                                            register_names[rd],  \
                                            register_names[rt],  \
                                            register_names[rs]);
 #define ITP_FORMAT_BRANCH_GENERIC(name)                               \
     printf("  %x:\t%08x\t%s %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
-                                                 cir, \
+                                                 cir,                 \
                                                  name,                \
                                                  register_names[rs],  \
                                                  imm16,               \
                                                  mips->r[MIPS_R_NNPC]);
-#define ITP_FORMAT_J_JAL(name)                              \
+#define ITP_FORMAT_J_JAL(name)                                       \
     printf("  %x:\t%08x\t%s 0x%07x (0x%08x)\n", mips->r[MIPS_R_PC],  \
-                                                cir, \
+                                                cir,                 \
                                                 name,                \
                                                 imm26,               \
                                                 mips->r[MIPS_R_NNPC]);
-#define ITP_FORMAT_BRANCH_EQ_NE(name)           \
+#define ITP_FORMAT_BRANCH_EQ_NE(name)                                     \
     printf("  %x:\t%08x\t%s %s, %s, %hd (0x%08x)\n", mips->r[MIPS_R_PC],  \
-                                                     cir, \
+                                                     cir,                 \
                                                      name,                \
                                                      register_names[rs],  \
                                                      register_names[rt],  \
                                                      imm16,               \
                                                      mips->r[MIPS_R_NNPC]);
-#define ITP_FORMAT_ALU_IMM(name)            \
+#define ITP_FORMAT_ALU_IMM(name)                                 \
     printf("  %x:\t%08x\t%s %s, %s, %hd\n", mips->r[MIPS_R_PC],  \
-                                            cir, \
+                                            cir,                 \
                                             name,                \
                                             register_names[rt],  \
                                             register_names[rs],  \
                                             imm16);
-#define ITP_FORMAT_LUI_IMM(name)               \
+#define ITP_FORMAT_LUI_IMM(name)                                \
     printf("  %x:\t%08x\t%s %s, 0x%04x\n", mips->r[MIPS_R_PC],  \
-                                           cir, \
+                                           cir,                 \
                                            name,                \
                                            register_names[rt],  \
                                            imm16);
-#define ITP_FORMAT_LOAD_IMM(name)                  \
+#define ITP_FORMAT_LOAD_IMM(name)                                   \
     printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
-                                               cir, \
+                                               cir,                 \
                                                name,                \
                                                register_names[rt],  \
                                                imm16,               \
                                                register_names[rs]);
-#define ITP_FORMAT_STORE_IMM(name)                 \
+#define ITP_FORMAT_STORE_IMM(name)                                  \
     printf("  %x:\t%08x\t%s %s, 0x%04x[%s]\n", mips->r[MIPS_R_PC],  \
-                                               cir, \
+                                               cir,                 \
                                                name,                \
                                                register_names[rt],  \
                                                imm16,               \
                                                register_names[rs]);
 #define ITP_FORMAT_RDHWR(name)                                      \
     printf("  %x:\t%08x\t%s %s, %d\n", mips->r[MIPS_R_PC],          \
-                                       cir,         \
+                                       cir,                         \
                                        name,                        \
                                        register_names[rt],          \
                                        rd);
@@ -157,139 +156,139 @@
  * - hide boilerplate from implementation            *
  *****************************************************/
 #define ITP_TYPE_NONE
-#define ITP_TYPE_SHIFT_IMM                                         \
-    u8  sh; u32 value_rt;                                          \
-    enum MIPS_REG rt, rd;                                          \
-    rt = (cir >> RT_SHIFT) & RT_MASK;              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
-    sh = (cir >> SH_SHIFT) & SH_MASK;              \
-    value_rt = mips->r[rt];                                        \
+#define ITP_TYPE_SHIFT_IMM                           \
+    u8  sh; u32 value_rt;                            \
+    enum MIPS_REG rt, rd;                            \
+    rt = (cir >> RT_SHIFT) & RT_MASK;                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
+    sh = (cir >> SH_SHIFT) & SH_MASK;                \
+    value_rt = mips->r[rt];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_SHIFT_REG                                         \
-    u32 value_rs, value_rt;                                        \
-    enum MIPS_REG rs, rt, rd;                                      \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    rt = (cir >> RT_SHIFT) & RT_MASK;              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
-    value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
+#define ITP_TYPE_SHIFT_REG                           \
+    u32 value_rs, value_rt;                          \
+    enum MIPS_REG rs, rt, rd;                        \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    rt = (cir >> RT_SHIFT) & RT_MASK;                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
+    value_rs = mips->r[rs]; value_rt = mips->r[rt];  \
     ITP_LOAD_DELAY
-#define ITP_TYPE_JR                                                \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs;                                              \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    value_rs = mips->r[rs];                                        \
+#define ITP_TYPE_JR                                  \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs;                                \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    value_rs = mips->r[rs];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_JALR                                              \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs, rd;                                          \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
-    value_rs = mips->r[rs];                                        \
+#define ITP_TYPE_JALR                                \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs, rd;                            \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
+    value_rs = mips->r[rs];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_MF                                                \
-    enum MIPS_REG rd;                                              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
+#define ITP_TYPE_MF                                  \
+    enum MIPS_REG rd;                                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
     ITP_LOAD_DELAY
-#define ITP_TYPE_MT                                                \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs;                                              \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    value_rs = mips->r[rs];                                        \
+#define ITP_TYPE_MT                                  \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs;                                \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    value_rs = mips->r[rs];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_SYSCALL                                           \
-    u32 imm20, v0, a0, a1, a2, a3;                                 \
-    imm20 = (cir >> IMM20_SHIFT) & IMM20_MASK;     \
-    v0 = mips->r[MIPS_R_V0];                                       \
-    a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];              \
-    a2 = mips->r[MIPS_R_A2]; a3 = mips->r[MIPS_R_A3];              \
+#define ITP_TYPE_SYSCALL                             \
+    u32 imm20, v0, a0, a1, a2, a3;                   \
+    imm20 = (cir >> IMM20_SHIFT) & IMM20_MASK;       \
+    v0 = mips->r[MIPS_R_V0];                         \
+    a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];\
+    a2 = mips->r[MIPS_R_A2]; a3 = mips->r[MIPS_R_A3];\
     ITP_LOAD_DELAY
-#define ITP_TYPE_BRK                                               \
-    u32 imm20, v0, a0, a1, a2, a3;                                 \
-    imm20 = (cir >> IMM20_SHIFT) & IMM20_MASK;     \
-    v0 = mips->r[MIPS_R_V0];                                       \
-    a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];              \
+#define ITP_TYPE_BRK                                 \
+    u32 imm20, v0, a0, a1, a2, a3;                   \
+    imm20 = (cir >> IMM20_SHIFT) & IMM20_MASK;       \
+    v0 = mips->r[MIPS_R_V0];                         \
+    a0 = mips->r[MIPS_R_A0]; a1 = mips->r[MIPS_R_A1];\
     a2 = mips->r[MIPS_R_A2]; a3 = mips->r[MIPS_R_A3];
-#define ITP_TYPE_MULT_DIV                                          \
-    u32 value_rs, value_rt;                                        \
-    enum MIPS_REG rs, rt;                                          \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    rt = (cir >> RT_SHIFT) & RT_MASK;              \
-    value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
+#define ITP_TYPE_MULT_DIV                            \
+    u32 value_rs, value_rt;                          \
+    enum MIPS_REG rs, rt;                            \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    rt = (cir >> RT_SHIFT) & RT_MASK;                \
+    value_rs = mips->r[rs]; value_rt = mips->r[rt];  \
     ITP_LOAD_DELAY
-#define ITP_TYPE_ALU_REG                                           \
-    u32 value_rs, value_rt;                                        \
-    enum MIPS_REG rs, rt, rd;                                      \
-    rs = (cir >> RS_SHIFT) & RS_MASK;              \
-    rt = (cir >> RT_SHIFT) & RT_MASK;              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
-    value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
+#define ITP_TYPE_ALU_REG                             \
+    u32 value_rs, value_rt;                          \
+    enum MIPS_REG rs, rt, rd;                        \
+    rs = (cir >> RS_SHIFT) & RS_MASK;                \
+    rt = (cir >> RT_SHIFT) & RT_MASK;                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
+    value_rs = mips->r[rs]; value_rt = mips->r[rt];  \
     ITP_LOAD_DELAY
-#define ITP_TYPE_BRANCH_GENERIC                                    \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs; u16 imm16;                                   \
-    rs    = (cir >> RS_SHIFT) & RS_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
-    value_rs = mips->r[rs];                                        \
+#define ITP_TYPE_BRANCH_GENERIC                      \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs; u16 imm16;                     \
+    rs    = (cir >> RS_SHIFT) & RS_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
+    value_rs = mips->r[rs];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_J_JAL                                             \
-    u32 imm26;                                                     \
-    imm26 = (cir >> IMM26_SHIFT) & IMM26_MASK;     \
+#define ITP_TYPE_J_JAL                               \
+    u32 imm26;                                       \
+    imm26 = (cir >> IMM26_SHIFT) & IMM26_MASK;       \
     ITP_LOAD_DELAY
-#define ITP_TYPE_BRANCH_EQ_NE                                      \
-    u16 imm16;                                                     \
-    u32 value_rs, value_rt;                                        \
-    enum MIPS_REG rs, rt;                                          \
-    rs    = (cir >> RS_SHIFT) & RS_MASK;           \
-    rt    = (cir >> RT_SHIFT) & RT_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
-    value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
+#define ITP_TYPE_BRANCH_EQ_NE                        \
+    u16 imm16;                                       \
+    u32 value_rs, value_rt;                          \
+    enum MIPS_REG rs, rt;                            \
+    rs    = (cir >> RS_SHIFT) & RS_MASK;             \
+    rt    = (cir >> RT_SHIFT) & RT_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
+    value_rs = mips->r[rs]; value_rt = mips->r[rt];  \
     ITP_LOAD_DELAY
-#define ITP_TYPE_ALU_IMM                                           \
-    u16 imm16;                                                     \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs, rt;                                          \
-    rs    = (cir >> RS_SHIFT) & RS_MASK;           \
-    rt    = (cir >> RT_SHIFT) & RT_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
-    value_rs = mips->r[rs];                                        \
+#define ITP_TYPE_ALU_IMM                             \
+    u16 imm16;                                       \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs, rt;                            \
+    rs    = (cir >> RS_SHIFT) & RS_MASK;             \
+    rt    = (cir >> RT_SHIFT) & RT_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
+    value_rs = mips->r[rs];                          \
     ITP_LOAD_DELAY
-#define ITP_TYPE_LUI_IMM                                           \
-    u16 imm16;                                                     \
-    enum MIPS_REG rt;                                              \
-    rt    = (cir >> RT_SHIFT) & RT_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
+#define ITP_TYPE_LUI_IMM                             \
+    u16 imm16;                                       \
+    enum MIPS_REG rt;                                \
+    rt    = (cir >> RT_SHIFT) & RT_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
     ITP_LOAD_DELAY
-#define ITP_TYPE_LOAD_IMM                                          \
-    u16 imm16;                                                     \
-    u32 value_rs;                                                  \
-    enum MIPS_REG rs, rt;                                          \
-    rs    = (cir >> RS_SHIFT) & RS_MASK;           \
-    rt    = (cir >> RT_SHIFT) & RT_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
+#define ITP_TYPE_LOAD_IMM                            \
+    u16 imm16;                                       \
+    u32 value_rs;                                    \
+    enum MIPS_REG rs, rt;                            \
+    rs    = (cir >> RS_SHIFT) & RS_MASK;             \
+    rt    = (cir >> RT_SHIFT) & RT_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
     value_rs = mips->r[rs];
-#define ITP_TYPE_STORE_IMM                                         \
-    u16 imm16;                                                     \
-    u32 value_rs, value_rt;                                        \
-    enum MIPS_REG rs, rt;                                          \
-    rs    = (cir >> RS_SHIFT) & RS_MASK;           \
-    rt    = (cir >> RT_SHIFT) & RT_MASK;           \
-    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;     \
-    value_rs = mips->r[rs]; value_rt = mips->r[rt];                \
+#define ITP_TYPE_STORE_IMM                           \
+    u16 imm16;                                       \
+    u32 value_rs, value_rt;                          \
+    enum MIPS_REG rs, rt;                            \
+    rs    = (cir >> RS_SHIFT) & RS_MASK;             \
+    rt    = (cir >> RT_SHIFT) & RT_MASK;             \
+    imm16 = (cir >> IMM16_SHIFT) & IMM16_MASK;       \
+    value_rs = mips->r[rs]; value_rt = mips->r[rt];  \
     ITP_LOAD_DELAY
-#define ITP_TYPE_RDHWR                                             \
-    enum MIPS_REG rt, rd;                                          \
-    rt = (cir >> RT_SHIFT) & RT_MASK;              \
-    rd = (cir >> RD_SHIFT) & RD_MASK;              \
+#define ITP_TYPE_RDHWR                               \
+    enum MIPS_REG rt, rd;                            \
+    rt = (cir >> RT_SHIFT) & RT_MASK;                \
+    rd = (cir >> RD_SHIFT) & RD_MASK;                \
     ITP_LOAD_DELAY
 
 
 /* instruction implementations */
-#define ITP_SLL_IMPL mips->r[rd] =             value_rt  << sh;
-#define ITP_SRL_IMPL mips->r[rd] =             value_rt  >> sh;
+#define ITP_SLL_IMPL mips->r[rd] =             value_rt << sh;
+#define ITP_SRL_IMPL mips->r[rd] =             value_rt >> sh;
 #define ITP_SRA_IMPL mips->r[rd] = (u32)((s32) value_rt >> sh);
 
-#define ITP_SLLV_IMPL mips->r[rd] =            value_rt  << (value_rs & 0x1f);
-#define ITP_SRLV_IMPL mips->r[rd] =            value_rt  >> (value_rs & 0x1f);
+#define ITP_SLLV_IMPL mips->r[rd] =            value_rt << (value_rs & 0x1f);
+#define ITP_SRLV_IMPL mips->r[rd] =            value_rt >> (value_rs & 0x1f);
 #define ITP_SRAV_IMPL mips->r[rd] = (u32)((s32)value_rt >> (value_rs & 0x1f));
 
 #define ITP_JR_IMPL                  \
