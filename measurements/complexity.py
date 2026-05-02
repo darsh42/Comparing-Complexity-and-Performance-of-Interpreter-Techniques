@@ -17,11 +17,9 @@ TECHNIQUES = {
     "Tail-Calling":         3,
     "Computed-Goto":        4,
     "Super Instructions":   5,
-    "Block Decoding":       6,
-    "Stack Caching":        7,
-    "Context Threading":    8,
-    "Register Allocation":  9,
-    "Machine Code (JIT)":   10}
+    "Context Threading":    6,
+    "Block Decoding":       7,
+    "Machine Code (JIT)":   8}
 
 STRUCTURES = {
     "Static Array":         1,
@@ -32,24 +30,23 @@ STRUCTURES = {
     "Hash Map":             6}
 
 ENGINES = {
-    "Switch-Case":    {
+    "SC":    {
         "source":      "../switch.c",
         "techniques": ["Switch-Case"],    
         "structures": []},
-    "Tail-Calling":   {
+    "TC":   {
         "source":      "../tail-call.c",
         "techniques": ["Tail-Calling"],   
         "structures": ["Static Array"]},
-    "Computed-Goto":   {
+    "CG":   {
         "source":      "../computed-goto.c",
         "techniques": ["Computed-Goto"],   
         "structures": ["Static Array"]},
-    "Block Decoding": {
+    "BD": {
         "source":      "../blocked.c",
         "techniques": ["Block Decoding",
-                       "Computed-Goto",
-                       "Tail-Calling"], 
-        "structures": ["Static Array", 
+                       "Computed-Goto"], 
+        "structures": ["Static Array",
                        "Dynamic Array", 
                        "Binary Decision Tree", 
                        "Hash Map"]}}
@@ -73,10 +70,8 @@ def process_complexity(filename=str(RESULTS / 'complexity.csv')):
                           FORMULA(config['techniques'],
                                   config['structures'],
                                   nloc)])
-                         
-                         
 
-    headers = ['Engine', 'Heuristic', 'NLOC', 'CC', 'Fan-Out']
+    headers = ['Engine', 'NLOC', 'CC', 'Fan-Out', 'Heuristic']
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
 
