@@ -35,8 +35,8 @@ def parallel_execute(command, cores, engines, benchmarks):
     """
     tasks  = []
     cycler = itertools.cycle(cores)
-    for engine, interpreter in engines.items():
-        for benchmark, workload in benchmarks.items():
+    for benchmark, workload in benchmarks.items():
+        for engine, interpreter in engines.items():
             tasks.append([command(next(cycler), interpreter, workload),
                           engine, benchmark])
     results = []
