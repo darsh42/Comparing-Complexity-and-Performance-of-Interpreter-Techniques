@@ -67,7 +67,6 @@ void interpreter_switch(struct mips *mips, struct memory *memory) {
             break;                                                                      \
         }
 #endif
-
         /* process opcode */
         switch((cir >> OP_SHIFT) & OP_MASK) {
         /*  PRIMARY INSTRUCTION BLOCK */
