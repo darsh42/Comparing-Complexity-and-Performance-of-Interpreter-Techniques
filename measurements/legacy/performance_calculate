@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Check for root at the start
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root (use sudo)"
+   exit 1
+fi
+
+BENCHMARK=$1
+RUNS=1
+SAMPLE="./../build/samples"
+RESULTS="./../build/measurements"
+BINARY="./../build"
+ENGINES=("switch" "computed-goto" "tail-call" "blocked")
+
+# Capture original states
+ASLR=$(cat /proc/sys/kernel/randomize_va_space)
+GOVR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+
+function startup() {
+    echo "Staging environment: Performance mode, ASLR off..."
+    echo 0 | tee /proc/sys/kernel/randomize_va_space > /dev/null
+    echo performance | tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > /dev/null
+}
+
+function cleanup() {
+    echo "Unstaging environment: Efficiency mode, ASLR on..."
+    echo "$ASLR" | tee /proc/sys/kernel/randomize_va_space > /dev/null
+    echo "$GOVR" | tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > /dev/null
+}
+
+# Trap ensures cleanup runs even if you Ctrl+C
+trap cleanup EXIT
+
+mkdir -p "$RESULTS"
+startup
+
+for NAME in "${ENGINES[@]}"; do
+    echo "--- Measuring Engine: $NAME ---"
+    perf stat -r $RUNS \
+              taskset -c 0 "$BINARY/$NAME" "$SAMPLE/$BENCHMARK" > /dev/null
+done

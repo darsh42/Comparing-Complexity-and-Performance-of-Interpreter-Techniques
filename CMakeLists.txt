@@ -36,8 +36,6 @@ ExternalProject_Add(samples
 add_library(release-flags INTERFACE)
 target_compile_options(release-flags
     INTERFACE
-    -O3
-    -flto
     -Wall
     -Wextra
     -Wfloat-equal
@@ -48,16 +46,18 @@ target_compile_options(release-flags
     -Wstrict-overflow
     -Wno-unused-variable
     -Wno-unused-parameter
-    -fno-omit-frame-pointer
-    -march=native)
+    -O3
+    -flto
+    -march=native
+    -fno-plt
+    -fno-semantic-interposition
+    -fno-omit-frame-pointer)
 target_link_options(release-flags
     INTERFACE
     -flto)
 add_library(debug-flags INTERFACE)
 target_compile_options(debug-flags
     INTERFACE
-    -std=c11
-    -O3
     -Wall
     -Wextra
     -Wfloat-equal
@@ -69,13 +69,15 @@ target_compile_options(debug-flags
     -Wno-unused-variable
     -Wno-unused-parameter
     -gdwarf-4
-    #-fsanitize=address
-    -fno-omit-frame-pointer
-    -march=native)
+    -O3
+    -flto
+    -march=native
+    -fno-plt
+    -fno-semantic-interposition
+    -fno-omit-frame-pointer)
 target_link_options(debug-flags
     INTERFACE
     -flto)
-#-fsanitize=address)
 
 #### core
 add_library(supporting
@@ -83,10 +85,10 @@ add_library(supporting
     ${CMAKE_CURRENT_SOURCE_DIR}/loader.c
     ${CMAKE_CURRENT_SOURCE_DIR}/memory.c
     ${CMAKE_CURRENT_SOURCE_DIR}/log.c)
- target_compile_options(supporting
+target_compile_options(supporting
      PRIVATE
      -flto)
- target_link_options(supporting
+target_link_options(supporting
      PRIVATE
      -flto)
 target_link_libraries(supporting

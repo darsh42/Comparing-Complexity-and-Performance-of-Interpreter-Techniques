@@ -13,15 +13,10 @@ add_library(compile-flags INTERFACE)
 ## compiler options
 target_compile_options(compile-flags
     INTERFACE
-    -static
-    -fno-pie
-    -Wall 
     -O2
-    -mfp32
+    -static
     -march=r3000
-    -mexplicit-relocs
-    -fno-delayed-branch  # Note: This affects branches, not loads
-    -Wa,-mips1,-O)       # Pass options to the assembler
+    -Wall)
 
 target_link_options(compile-flags
     INTERFACE
