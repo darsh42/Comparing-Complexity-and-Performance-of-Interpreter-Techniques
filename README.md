@@ -4,7 +4,20 @@ This project is an implementation of different interpreter techniques for the MI
 ## Pre-requisites
 Download the required build tools
 ```bash
-apt install cmake make python3
+sudo apt update && sudo apt install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    xz-utils \
+    libgmp-dev \
+    libmpfr-dev \
+    libmpc-dev \
+    bison \
+    flex \
+    texinfo \
+    gawk \
+    python3
 ```
 
 ## Build 
